@@ -6,9 +6,9 @@
 
 package helium314.keyboard.event
 
+import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo
 import helium314.keyboard.latin.common.Constants
 import helium314.keyboard.latin.common.StringUtils
-import helium314.keyboard.latin.suggestions.SuggestedWordInfo
 
 /**
  * Class representing a generic input event as handled by Latin IME.
@@ -231,7 +231,7 @@ class Event private constructor(
         fun createSuggestionPickedEvent(suggestedWordInfo: SuggestedWordInfo) =
             Event(
                 eventType = EventType.SUGGESTION_PICKED,
-                text = suggestedWordInfo.word,
+                text = suggestedWordInfo.mWord,
                 x = Constants.SUGGESTION_STRIP_COORDINATE,
                 y = Constants.SUGGESTION_STRIP_COORDINATE,
                 suggestedWordInfo = suggestedWordInfo
@@ -258,8 +258,8 @@ class Event private constructor(
         fun createPunctuationSuggestionPickedEvent(suggestedWordInfo: SuggestedWordInfo) =
             Event(
                 eventType = EventType.SUGGESTION_PICKED,
-                text = suggestedWordInfo.word,
-                codePoint = suggestedWordInfo.word[0].code,
+                text = suggestedWordInfo.mWord,
+                codePoint = suggestedWordInfo.mWord[0].code,
                 x = Constants.SUGGESTION_STRIP_COORDINATE,
                 y = Constants.SUGGESTION_STRIP_COORDINATE,
                 suggestedWordInfo = suggestedWordInfo

@@ -36,8 +36,6 @@ import androidx.annotation.Nullable;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 
-import com.android.inputmethod.latin.BinaryDictionary;
-
 import helium314.keyboard.latin.common.Constants;
 import helium314.keyboard.latin.common.StringUtils;
 import helium314.keyboard.latin.common.StringUtilsKt;
@@ -48,7 +46,7 @@ import helium314.keyboard.latin.utils.CapsModeUtils;
 import helium314.keyboard.latin.utils.DebugLogUtils;
 import helium314.keyboard.latin.utils.NgramContextUtils;
 import helium314.keyboard.latin.utils.StatsUtils;
-import helium314.keyboard.latin.utils.TextAtCursor;
+import helium314.keyboard.latin.utils.TextRange;
 
 import java.util.concurrent.TimeUnit;
 
@@ -65,8 +63,8 @@ public final class RichInputConnection implements PrivateCommandPerformer {
     private static final boolean DBG = false;
     private static final boolean DEBUG_PREVIOUS_TEXT = false;
     private static final boolean DEBUG_BATCH_NESTING = false;
-    private static final int NUM_CHARS_TO_GET_BEFORE_CURSOR = BinaryDictionary.DICTIONARY_MAX_WORD_LENGTH;
-    private static final int NUM_CHARS_TO_GET_AFTER_CURSOR = BinaryDictionary.DICTIONARY_MAX_WORD_LENGTH;
+    private static final int NUM_CHARS_TO_GET_BEFORE_CURSOR = 40;
+    private static final int NUM_CHARS_TO_GET_AFTER_CURSOR = 40;
     private static final int INVALID_CURSOR_POSITION = -1;
 
     /**
@@ -315,45 +313,6 @@ public final class RichInputConnection implements PrivateCommandPerformer {
 
     public void commitCodePoint(final int codePoint) {
         commitText(StringUtils.newSingleCodePointString(codePoint), 1);
-    }
-
-    /**
-     * Replaces text at the cursor, by first deleting the surrounding text containing textToReplace,
-     * and then calling commitText.
-     * If textToReplace is not found, text is committed without removing anything.
-     *
-     * @param textToReplace The text to be replaced
-     * @param textToCommit The text to commit. This may include styles.
-     * @param newCursorPosition The new cursor position around the text.
-     */
-    public void replaceTextAtCursor(String textToReplace, CharSequence textToCommit, int newCursorPosition) {
-        if (mComposingText.toString().equals(textToReplace)) {
-            commitText(textToReplace, newCursorPosition);
-            return;
-        }
-        // find length to delete before / after cursor, at start assume cursor is after the word
-        int lengthBefore = textToReplace.length();
-        int lengthAfter = 0;
-        CharSequence before = getTextBeforeCursor(textToReplace.length(), 0);
-        if (!TextUtils.equals(before, textToReplace)) { // not actually after the word
-            CharSequence after = getTextAfterCursor(textToReplace.length(), 0);
-            if (before == null || after == null) {
-                commitText(textToReplace, newCursorPosition);
-                return;
-            }
-            String both = before.toString() + after;
-            int startIndex = both.indexOf(textToReplace);
-            if (startIndex == -1) {
-                commitText(textToReplace, newCursorPosition);
-                return;
-            }
-            lengthBefore = textToReplace.length() - startIndex;
-            lengthAfter = startIndex;
-        }
-        beginBatchEdit(); // batch to avoid getting unwanted selection updates
-        mIC.deleteSurroundingText(lengthBefore, lengthAfter);
-        commitText(textToCommit, newCursorPosition);
-        endBatchEdit();
     }
 
     /**
@@ -806,10 +765,9 @@ public final class RichInputConnection implements PrivateCommandPerformer {
             mIC.setSelection(mExpectedSelEnd, mExpectedSelEnd);
             return;
         }
-        TextAtCursor text = getTextAtCursor();
-        if (text == null) return;
-        TextAtCursor.WordAtCursor wordAtCursor = text.getWordAtCursor(spacingAndPunctuations);
-        mIC.setSelection(mExpectedSelStart - wordAtCursor.getNumberOfCharsBeforeCursor(), mExpectedSelStart + wordAtCursor.getNumberOfCharsAfterCursor());
+        TextRange range = getWordRangeAtCursor(spacingAndPunctuations);
+        if (range == null) return;
+        mIC.setSelection(mExpectedSelStart - range.getNumberOfCharsInWordBeforeCursor(), mExpectedSelStart + range.getNumberOfCharsInWordAfterCursor());
     }
 
     public void copyText(final boolean getSelection) {
@@ -891,9 +849,12 @@ public final class RichInputConnection implements PrivateCommandPerformer {
     }
 
     /**
-     * Returns the text surrounding the cursor, without the current selection (if any).
+     * Returns the text surrounding the cursor.
+     *
+     * @param spacingAndPunctuations the rules for spacing and punctuation
+     * @return a range containing the text surrounding the cursor (does NOT include the current selection, if any)
      */
-    @Nullable public TextAtCursor getTextAtCursor() {
+    @Nullable public TextRange getWordRangeAtCursor(SpacingAndPunctuations spacingAndPunctuations) {
         mIC = mParent.getCurrentInputConnection();
         if (!isConnected()) {
             return null;
@@ -911,7 +872,7 @@ public final class RichInputConnection implements PrivateCommandPerformer {
         if (before == null || after == null) {
             return null;
         }
-        return new TextAtCursor(before, after);
+        return StringUtilsKt.getTouchedWordRange(before, after, spacingAndPunctuations);
     }
 
     public boolean isCursorTouchingWord(final SpacingAndPunctuations spacingAndPunctuations,

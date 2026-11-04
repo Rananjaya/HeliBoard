@@ -79,6 +79,7 @@ import helium314.keyboard.latin.InputStyle
 import helium314.keyboard.latin.NgramContext
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.SingleDictionaryFacilitator
+import helium314.keyboard.latin.SuggestedWords
 import helium314.keyboard.latin.common.ComposedData
 import helium314.keyboard.latin.common.Links
 import helium314.keyboard.latin.common.LocaleUtils
@@ -86,7 +87,6 @@ import helium314.keyboard.latin.common.LocaleUtils.constructLocale
 import helium314.keyboard.latin.dictionary.Dictionary
 import helium314.keyboard.latin.dictionary.DictionaryInfoUtils
 import helium314.keyboard.latin.settings.Settings
-import helium314.keyboard.latin.suggestions.SuggestionResults
 import helium314.keyboard.latin.utils.ChecksumCalculator
 import helium314.keyboard.latin.utils.GestureDataDao
 import helium314.keyboard.latin.utils.GestureDataGatheringSettings
@@ -94,6 +94,7 @@ import helium314.keyboard.latin.utils.NextScreenIcon
 import helium314.keyboard.latin.utils.ScriptUtils
 import helium314.keyboard.latin.utils.SubtypeLocaleUtils
 import helium314.keyboard.latin.utils.SubtypeSettings
+import helium314.keyboard.latin.utils.SuggestionResults
 import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.latin.utils.UncachedInputMethodManagerUtils
 import helium314.keyboard.latin.utils.WordData
@@ -230,8 +231,8 @@ fun GestureDataScreen(
                     if (!composedData.mIsBatchMode || inputStyle != InputStyle.TAIL_BATCH) return
                     val target = wordFromDict ?: return
                     val newData = WordData(target, suggestions, composedData, ngramContext, keyboard, inputStyle, true)
-                    if (suggestions.any { it.word == target && it.score >= 0 } // just not negative should be fine
-                            || suggestions.first().word == target) { // or the target word first (but negative), which can happen in some cases
+                    if (suggestions.any { it.mWord == target && it.mScore >= 0 } // just not negative should be fine
+                            || suggestions.first().mWord == target) { // or the target word first (but negative), which can happen in some cases
                         scope.launch {
                             ++sessionWordCount
                             newData.save(ctx)

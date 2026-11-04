@@ -10,9 +10,7 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.SuggestionSpan
-import helium314.keyboard.latin.suggestions.PunctuationSuggestions
-import helium314.keyboard.latin.suggestions.SuggestedWordInfo
-import helium314.keyboard.latin.suggestions.SuggestedWords
+import helium314.keyboard.latin.SuggestedWords
 import java.util.*
 
 fun getTextWithAutoCorrectionIndicatorUnderline(context: Context?, text: String, locale: Locale?): CharSequence {
@@ -25,22 +23,22 @@ fun getTextWithAutoCorrectionIndicatorUnderline(context: Context?, text: String,
 }
 
 fun getTextWithSuggestionSpan(context: Context, pickedWord: String, suggestedWords: SuggestedWords, locale: Locale): CharSequence {
-    if (pickedWord.isEmpty() || suggestedWords.isEmpty()
-        || suggestedWords.isPrediction || suggestedWords is PunctuationSuggestions
+    if (pickedWord.isEmpty() || suggestedWords.isEmpty
+        || suggestedWords.isPrediction || suggestedWords.isPunctuationSuggestions
     ) {
         return pickedWord
     }
     val suggestionsList = mutableListOf<String>()
-    for (i in suggestedWords.indices) {
+    for (i in 0 until suggestedWords.size()) {
         if (suggestionsList.size >= SuggestionSpan.SUGGESTIONS_MAX_SIZE) {
             break
         }
         val info = suggestedWords.getInfo(i)
-        if (info.isKindOf(SuggestedWordInfo.KIND_PREDICTION)) {
+        if (info.isKindOf(SuggestedWords.SuggestedWordInfo.KIND_PREDICTION)) {
             continue
         }
-        if (pickedWord != info.word) {
-            suggestionsList.add(info.word)
+        if (pickedWord != info.mWord) {
+            suggestionsList.add(info.mWord)
         }
     }
     val suggestionSpan = SuggestionSpan(context, locale, suggestionsList.toTypedArray(), 0, null)

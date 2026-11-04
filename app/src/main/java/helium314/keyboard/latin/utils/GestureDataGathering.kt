@@ -14,16 +14,16 @@ import helium314.keyboard.latin.InputStyle
 import helium314.keyboard.latin.NgramContext
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.SingleDictionaryFacilitator
+import helium314.keyboard.latin.SuggestedWords
+import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo.KIND_SHORTCUT
 import helium314.keyboard.latin.common.ComposedData
 import helium314.keyboard.latin.common.Constants
 import helium314.keyboard.latin.common.InputPointers
 import helium314.keyboard.latin.common.StringUtils
+import helium314.keyboard.latin.common.getTouchedWordRange
 import helium314.keyboard.latin.dictionary.Dictionary
 import helium314.keyboard.latin.dictionary.ReadOnlyBinaryDictionary
 import helium314.keyboard.latin.settings.Settings
-import helium314.keyboard.latin.suggestions.SuggestedWordInfo
-import helium314.keyboard.latin.suggestions.SuggestedWordInfo.Companion.KIND_SHORTCUT
-import helium314.keyboard.latin.suggestions.SuggestionResults
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -63,7 +63,7 @@ object BackgroundGatheringCache {
         updateIcon()
     }
 
-    fun onPickSuggestionAfterGesturing(suggestion: SuggestedWordInfo, originalWord: String) {
+    fun onPickSuggestionAfterGesturing(suggestion: SuggestedWords.SuggestedWordInfo, originalWord: String) {
         // replace the latest entry in cache, but do a sanity check
         if (DEBUG) Log.i(TAG, "picked ${suggestion.word} instead of $originalWord after gesturing")
         val lastEntry = cachedWords.lastOrNull()
@@ -71,17 +71,17 @@ object BackgroundGatheringCache {
             if (DEBUG) Log.w(TAG, "...but our last word is ${lastEntry?.topSuggestion}, not $originalWord")
             return
         }
-        lastEntry.targetWord = lastEntry.suggestions.firstOrNull { it.word == suggestion.word }?.word ?:
+        lastEntry.targetWord = lastEntry.suggestions.firstOrNull { it.mWord == suggestion.mWord }?.mWord ?:
             // consider that suggestion might be capitalized, but prefer exact match
-            lastEntry.suggestions.firstOrNull { it.word.equals(suggestion.word, true) }?.word
+            lastEntry.suggestions.firstOrNull { it.mWord.equals(suggestion.mWord, true) }?.mWord
         if (DEBUG) Log.i(TAG, "setting target word to ${lastEntry.targetWord}")
     }
 
-    fun onPickSuggestion(suggestion: SuggestedWordInfo, originalWord: String) {
+    fun onPickSuggestion(suggestion: SuggestedWords.SuggestedWordInfo, originalWord: String) {
         // this happens after tap-typing (new word or corrected gesture word), or when moving the cursor and then selecting a different suggestion
         // don't update anything if we have the word more than once
         val word = cachedWords.singleOrNull { it.topSuggestion?.word?.equals(originalWord, true) == true } ?: return
-        word.targetWord = word.suggestions.firstOrNull { it.word.equals(suggestion.word, true) }?.word
+        word.targetWord = word.suggestions.firstOrNull { it.mWord.equals(suggestion.mWord, true) }?.mWord
         if (DEBUG) Log.i(TAG, "picked ${word.targetWord} instead of $originalWord")
     }
 
@@ -118,16 +118,16 @@ object BackgroundGatheringCache {
 
         if (DEBUG) Log.i(TAG, "replace selection \"$selection\", before: \"$before\", after: \"$after\"")
         val spacingAndPunctuations = Settings.getValues().mSpacingAndPunctuations
-        val wordAtStart = TextAtCursor(before, "$selection$after").getWordAtCursor(spacingAndPunctuations)
-        val wordAtEnd = TextAtCursor("$before$selection", after).getWordAtCursor(spacingAndPunctuations)
-        if (DEBUG) Log.i(TAG, "at start \"${wordAtStart.word}\", at end \"${wordAtEnd.word}\"")
+        val wordAtStart = getTouchedWordRange(before, "$selection$after", spacingAndPunctuations)
+        val wordAtEnd = getTouchedWordRange("$before$selection", after, spacingAndPunctuations)
+        if (DEBUG) Log.i(TAG, "at start \"${wordAtStart.mWord}\", at end \"${wordAtEnd.mWord}\"")
         val trimmed = selection.trim()
         if (
-            (wordAtEnd.word == wordAtStart.word && selection in wordAtStart.word)
+            (wordAtEnd.mWord == wordAtStart.mWord && selection in wordAtStart.mWord)
             || (trimmed != selection && (wordAtStart == trimmed || wordAtEnd == trimmed)) // treat word + space like word
         ) {
             if (DEBUG) Log.i(TAG, "word or part of word selected, removing word")
-            cachedWords.removeAll { it.topSuggestion == wordAtStart.word || it.targetWord == wordAtStart.word }
+            cachedWords.removeAll { it.topSuggestion == wordAtStart.mWord || it.targetWord == wordAtStart.mWord }
         } else {
             // more than one word selected, we do nothing because deleting much is unlikely to happen because of bad gesture typing
         }
@@ -202,7 +202,7 @@ class WordData(
     val activeMode: Boolean,
     // first suggestion in background gathering, used to track later changes
     // may not be in SuggestionResults due to processing
-    val topSuggestion: SuggestedWordInfo? = null
+    val topSuggestion: SuggestedWords.SuggestedWordInfo? = null
 ) {
     // keyboard is not immutable, so better store potentially relevant information immediately
     private val keys = keyboard.sortedKeys
@@ -233,10 +233,10 @@ class WordData(
                 )
             }
         )
-        if (!activeMode && targetWord != null && suggestions.none { it.word == targetWord }) {
+        if (!activeMode && targetWord != null && suggestions.none { it.mWord == targetWord }) {
             // change target word to the first case insensitive match if there is no case sensitive match (actually this should not be necessary?)
-            val match = suggestions.firstOrNull { it.word.equals(targetWord, true) }
-            if (match != null) targetWord = match.word
+            val match = suggestions.firstOrNull { it.mWord.equals(targetWord, true) }
+            if (match != null) targetWord = match.mWord
         }
 
         val topWord = targetWord ?: topSuggestion?.word
@@ -244,9 +244,9 @@ class WordData(
         // we want to store which dictionaries are used, and a dict index (in used dict list) for each suggestion
         var dictCount = 0
         val dictionariesInUsedSuggestions = LinkedHashMap<Dictionary, Int>().apply { // linked because we need the order (well, not any more...)
-            filteredSuggestions.forEach { if (!containsKey(it.sourceDict)) put(it.sourceDict, dictCount++) }
+            filteredSuggestions.forEach { if (!containsKey(it.mSourceDict)) put(it.mSourceDict, dictCount++) }
             // we always want all main known dictionaries
-            suggestions.forEach { if (!containsKey(it.sourceDict) && it.isFromKnownMainDict(context)) put(it.sourceDict, dictCount++) }
+            suggestions.forEach { if (!containsKey(it.mSourceDict) && it.isFromKnownMainDict(context)) put(it.mSourceDict, dictCount++) }
         }
 
         val data = GestureData(
@@ -259,7 +259,7 @@ class WordData(
                 DictInfo(hash, dict.mDictType, dict.mLocale?.toLanguageTag())
             },
             // index not needed any more
-            filteredSuggestions.map { Suggestion(it.word, it.originalScore /*, dictionariesInUsedSuggestions[it.mSourceDict]*/) },
+            filteredSuggestions.map { Suggestion(it.mWord, it.mOriginalScore /*, dictionariesInUsedSuggestions[it.mSourceDict]*/) },
             pointerData,
             keyboardInfo,
             activeMode,
@@ -270,34 +270,34 @@ class WordData(
             scope.launch(Dispatchers.Main) { GestureDataGatheringSettings.informAboutTooManyBackgroundModeWords(context, dao) }
     }
 
-    fun filterSuggestions(blockedWords: Collection<String>): List<SuggestedWordInfo> {
-        val filteredSuggestions = mutableListOf<SuggestedWordInfo>()
-        for (word in suggestions.sortedByDescending { it.originalScore }) {
-            if (activeMode && word.word == targetWord) {
+    fun filterSuggestions(blockedWords: Collection<String>): List<SuggestedWords.SuggestedWordInfo> {
+        val filteredSuggestions = mutableListOf<SuggestedWords.SuggestedWordInfo>()
+        for (word in suggestions.sortedByDescending { it.mOriginalScore }) {
+            if (activeMode && word.mWord == targetWord) {
                 // always add the targetWord if we have it
                 filteredSuggestions.add(word)
                 continue
             }
-            if (filteredSuggestions.any { it.word == word.word })
+            if (filteredSuggestions.any { it.mWord == word.mWord })
                 continue // only first occurrence word
             if (filteredSuggestions.size > 18) // user sees 18 suggestions at most
                 continue
-            if (word.originalScore < 0 && filteredSuggestions.size > 5)
+            if (word.mOriginalScore < 0 && filteredSuggestions.size > 5)
                 continue // no need to add bad matches
             if (activeMode) {
                 filteredSuggestions.add(word)
                 continue
             }
-            if (word.word in blockedWords)
+            if (word.mWord in blockedWords)
                 continue // we should never come here, but better check twice
             filteredSuggestions.add(word)
-            if (word.word == (targetWord ?: topSuggestion?.word))
+            if (word.mWord == (targetWord ?: topSuggestion?.word))
                 break // no use for suggestions after that
         }
         // redact words that don't match the top suggestion / target word
         if (!activeMode) {
             for (i in filteredSuggestions.indices) {
-                if (filteredSuggestions[i].word != (targetWord ?: topSuggestion?.word))
+                if (filteredSuggestions[i].mWord != (targetWord ?: topSuggestion?.word))
                     filteredSuggestions[i] = filteredSuggestions[i].redact()
             }
         }
@@ -310,7 +310,7 @@ class WordData(
             return false
         if (activeMode)
             // active mode should be fine, the check is just an addition in case there is a bug that sets the wrong mode or dictionary facilitator
-            return suggestions.all { it.sourceDict == suggestions.first().sourceDict }
+            return suggestions.all { it.mSourceDict == suggestions.first().mSourceDict }
         if (Settings.getValues().mIncognitoModeEnabled)
             return false // don't save in incognito mode
         if (!GestureDataGatheringSettings.isBackgroundGatheringEnabled(context.prefs()))
@@ -324,27 +324,27 @@ class WordData(
         if (inputAttributes.mIsPasswordField || inputAttributes.mNoLearning || isEmailField)
             return false // background gathering should not even be enabled, but better have this backup
 
-        val matchingSuggestions = suggestions.filter { it.word.equals(targetWord ?: topSuggestion?.word, true) }
-        if (matchingSuggestions.all { (it.kindAndFlags and 0xFF) == KIND_SHORTCUT })
+        val matchingSuggestions = suggestions.filter { it.mWord.equals(targetWord ?: topSuggestion?.word, true) }
+        if (matchingSuggestions.all { (it.mKindAndFlags and 0xFF) == KIND_SHORTCUT })
             return false // we want at least one non-shortcut
 
         // word and dict-based filtering
         if (matchingSuggestions.none { it.isFromKnownMainDict(context) })
             return false // we have no use if not in main dictionary, also potentially sensitive
-        if (matchingSuggestions.any { it.sourceDict.mDictType == Dictionary.TYPE_CONTACTS })
+        if (matchingSuggestions.any { it.mSourceDict.mDictType == Dictionary.TYPE_CONTACTS })
             return false // if there is a suggestion from contacts -> never use it
         val ignoreWords = GestureDataGatheringSettings.getWordExclusions(context)
         // don't store if target word / first suggestion is blocked, the other suggestions will get redacted anyway
-        if ((targetWord ?: topSuggestion?.word) in ignoreWords)
+        if ((targetWord ?: topSuggestion?.mWord) in ignoreWords)
             return false
         return true
     }
 
-    private fun SuggestedWordInfo.redact() =
-        SuggestedWordInfo("", "", Int.MIN_VALUE, 0, sourceDict, 0, 0)
+    private fun SuggestedWords.SuggestedWordInfo.redact() =
+        SuggestedWords.SuggestedWordInfo("", "", Int.MIN_VALUE, 0, mSourceDict, 0, 0)
 
-    private fun SuggestedWordInfo.isFromKnownMainDict(context: Context): Boolean {
-        val hash = (sourceDict as? BinaryDictionary)?.hash ?: (sourceDict as? ReadOnlyBinaryDictionary)?.hash ?: return false
+    private fun SuggestedWords.SuggestedWordInfo.isFromKnownMainDict(context: Context): Boolean {
+        val hash = (mSourceDict as? BinaryDictionary)?.hash ?: (mSourceDict as? ReadOnlyBinaryDictionary)?.hash ?: return false
         return hash in getKnownDictHashes(context)
     }
 }
