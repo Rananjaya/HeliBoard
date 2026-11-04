@@ -802,6 +802,10 @@ New dictionary:
     <string name="settings_screen_about">About</string>
     <!-- version for about screen -->
     <string name="version">Version</string>
+    <string name="about_developer">Developer &amp; Maintainer</string>
+    <string name="about_developer_description">Developed and maintained by Rananjaya Ciranthaka Bandara.</string>
+    <string name="about_original_project">Original project</string>
+    <string name="about_original_project_description">Based on HeliBoard by Helium314.</string>
     <!-- github repo link for about screen -->
     <string name="about_github_link">Source code</string>
     <string name="about_source_code_description">https://github.com/Rananjaya/RCBBoard/tree/develop</string>
@@ -816,7 +820,7 @@ New dictionary:
     <!-- preference title for saving the log to a file -->
     <string name="save_log">Save log</string>
     <!-- license for about screen-->
-    <string name="license">Open-source license</string>
+    <string name="license">Open-source licence</string>
     <!-- license link for about screen-->
     <string name="gnu_gpl">GNU General Public License v3.0</string>
     <!-- Button to close a dialog where neither "ok" nor "cancel" are suitable. Preferably 10 characters or less. -->
