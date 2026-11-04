@@ -803,7 +803,7 @@ New dictionary:
     <!-- version for about screen -->
     <string name="version">Version</string>
     <string name="about_developer">Developer &amp; Maintainer</string>
-    <string name="about_developer_description">Developed and maintained by Rananjaya Ciranthaka Bandara.</string>
+    <string name="about_developer_description">Developed and maintained by Rananjaya Chiranthaka Bandara.</string>
     <string name="about_original_project">Original project</string>
     <string name="about_original_project_description">Based on HeliBoard by Helium314.</string>
     <!-- github repo link for about screen -->
