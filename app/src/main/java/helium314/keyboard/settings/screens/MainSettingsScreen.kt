@@ -2,26 +2,37 @@
 package helium314.keyboard.settings.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.utils.JniUtils
 import helium314.keyboard.latin.utils.SubtypeLocaleUtils.displayName
 import helium314.keyboard.latin.utils.SubtypeSettings
 import helium314.keyboard.latin.utils.NextScreenIcon
-import helium314.keyboard.settings.SearchSettingsScreen
+import helium314.keyboard.settings.SearchScreen
+import helium314.keyboard.settings.SettingsActivity
 import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.settings.initPreview
 import helium314.keyboard.settings.preferences.Preference
@@ -44,10 +55,22 @@ fun MainSettingsScreen(
     onClickDictionaries: () -> Unit,
     onClickBack: () -> Unit,
 ) {
-    SearchSettingsScreen(
+    SearchScreen(
         onClickBack = onClickBack,
-        title = stringResource(R.string.ime_settings),
-        settings = emptyList(),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_brand_mark),
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.Unspecified,
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(stringResource(R.string.english_ime_name))
+            }
+        },
+        filteredItems = { SettingsActivity.settingsContainer.filter(it) },
+        itemContent = { it.Preference() },
     ) {
         val enabledSubtypes = SubtypeSettings.getEnabledSubtypes(true)
         Scaffold(contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)) { innerPadding ->
