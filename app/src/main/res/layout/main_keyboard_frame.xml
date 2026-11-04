@@ -32,12 +32,14 @@
             android:id="@+id/emoji_palettes_stub"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
             android:layout="@layout/emoji_palettes_view" />
         <ViewStub
             android:inflatedId="@+id/clipboard_history_view"
             android:id="@+id/clipboard_history_stub"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
             android:layout="@layout/clipboard_history_view" />
 
         <ImageButton
