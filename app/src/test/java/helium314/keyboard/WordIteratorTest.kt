@@ -4,15 +4,16 @@ import androidx.test.core.app.ApplicationProvider
 import helium314.keyboard.compat.CompatBreakIterator
 import helium314.keyboard.latin.App
 import helium314.keyboard.latin.common.WordBreakIterator
-import helium314.keyboard.latin.common.getTouchedWordRange
 import helium314.keyboard.latin.common.stepsToCharCount
 import helium314.keyboard.latin.settings.SpacingAndPunctuations
-import helium314.keyboard.latin.utils.TextRange
+import helium314.keyboard.latin.utils.TextAtCursor
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class WordIteratorTest {
@@ -124,6 +125,21 @@ class WordIteratorTest {
         assertEquals(15 to 19, wbi.getTouchedWordBounds(19))
     }
 
+    @Test fun wordBoundaryDifferences() { // between WordBreakIterators
+        val sp = WordBreakIterator.getForSpacingAndPunctuations(SpacingAndPunctuations(ApplicationProvider.getApplicationContext<App>().resources, false, Locale.ROOT))
+        val it = CompatBreakIterator.getWordInstance(Locale.ROOT)
+        val text = "ab1"
+        it.text = text
+        sp.text = text
+        assertTrue(sp.isBoundary(2))
+        assertFalse(it.isBoundary(2))
+        assertEquals(0 to 2, sp.getTouchedWordBounds(0))
+        assertEquals(0 to 3, it.getTouchedWordBounds(0))
+        assertEquals(3 to 3, sp.getTouchedWordBounds(3))
+        assertEquals(0 to 3, it.getTouchedWordBounds(3))
+
+    }
+
     // todo: default and SpacingAndPunctuations iterators behave differently, what do we want?
     //  (plus in the end it should be customizable anyway)
     @Test fun wordStepsToCharCount() {
@@ -197,8 +213,9 @@ class WordIteratorTest {
         assertEquals(wantedWordEnd, end)
         // todo: better use the check above (does the same thing)
         //  but actually the whole check needs to be more more understandable and the tests expanded and the URL stuff fixed
-        val got = getTouchedWordRange(before, after, sp)
-        val wanted = TextRange(before + after, wantedWordStart, wantedWordEnd, before.length, false)
-        assertEquals(wanted, got)
+        val text = TextAtCursor(before, after)
+        val got = text.getWordAtCursor(sp)
+        assertEquals(wantedWordStart, got.start)
+        assertEquals(wantedWordEnd, got.end)
     }
 }

@@ -11,7 +11,9 @@ import helium314.keyboard.latin.dictionary.Dictionary
 import helium314.keyboard.latin.dictionary.DictionaryStats
 import helium314.keyboard.latin.makedict.WordProperty
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion
-import helium314.keyboard.latin.utils.SuggestionResults
+import helium314.keyboard.latin.suggestions.Suggest
+import helium314.keyboard.latin.suggestions.SuggestedWords
+import helium314.keyboard.latin.suggestions.SuggestionResults
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -30,14 +32,9 @@ class SingleDictionaryFacilitator(private val dict: Dictionary) : DictionaryFaci
         words.flatMap { word -> getSuggestions(word).distinctBy { it.word } } // Filter out duplicate results per word
             .groupBy { it.word }
             .forEach { (_, results) ->
-                val info = results.maxBy { it.mScore }
-                val score = (results.sumOf { it.mScore.toLong() - Int.MIN_VALUE } / words.size + Int.MIN_VALUE).toInt()
-                suggestionResults.add(
-                    SuggestedWords.SuggestedWordInfo(
-                        info.word, info.mPrevWordsContext, score, info.mKindAndFlags,
-                        info.mSourceDict, info.mIndexOfTouchPointOfSecondWord, info.mAutoCommitFirstWordConfidence
-                    )
-                )
+                val info = results.maxBy { it.score }
+                val score = (results.sumOf { it.score.toLong() - Int.MIN_VALUE } / words.size + Int.MIN_VALUE).toInt()
+                suggestionResults.add(info.copy(score = score))
             }
         return suggestionResults
     }
@@ -59,12 +56,11 @@ class SingleDictionaryFacilitator(private val dict: Dictionary) : DictionaryFaci
         settingsValuesForSuggestion: SettingsValuesForSuggestion, sessionId: Int, inputStyle: InputStyle
     ): SuggestionResults {
         val suggestionResults = SuggestionResults(SuggestedWords.MAX_SUGGESTIONS, ngramContext, false)
-        suggestionResults.addAll(
-            dict.getSuggestions(composedData, ngramContext, keyboard.proximityInfo.nativeProximityInfo,
-                settingsValuesForSuggestion, sessionId, 1f,
-                floatArrayOf(Dictionary.NOT_A_WEIGHT_OF_LANG_MODEL_VS_SPATIAL_MODEL)
-            )?.filter { !SupportedEmojis.isUnsupported(it.word) }
-        )
+        dict.getSuggestions(composedData, ngramContext, keyboard.proximityInfo.nativeProximityInfo,
+            settingsValuesForSuggestion, sessionId, 1f,
+            floatArrayOf(Dictionary.NOT_A_WEIGHT_OF_LANG_MODEL_VS_SPATIAL_MODEL)
+        )?.filter { !SupportedEmojis.isUnsupported(it.word) }
+            ?.let { suggestionResults.addAll(it) }
         suggestionLogger?.onNewSuggestions(suggestionResults, composedData, ngramContext, keyboard, inputStyle)
 
         return suggestionResults

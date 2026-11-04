@@ -19,7 +19,6 @@ import helium314.keyboard.keyboard.MainKeyboardView
 import helium314.keyboard.keyboard.PopupKeysKeyboardView
 import helium314.keyboard.keyboard.PopupKeysPanel
 import helium314.keyboard.latin.R
-import helium314.keyboard.latin.SuggestedWords
 import helium314.keyboard.latin.suggestions.MoreSuggestions.MoreSuggestionKey
 import helium314.keyboard.latin.utils.Log
 import kotlin.math.abs
@@ -106,7 +105,7 @@ class MoreSuggestionsView @JvmOverloads constructor(
         }
         val suggestedWords = keyboard.mSuggestedWords
         val index = key.mSuggestedWordIndex
-        if (index < 0 || index >= suggestedWords.size()) {
+        if (index < 0 || index >= suggestedWords.size) {
             Log.e(TAG, "Selected suggestion has an illegal index: $index")
             return
         }
