@@ -73,5 +73,6 @@
     <string name="english_ime_name" translatable="false">RCBBoard</string>
     <!-- App slogan-->
     <string name="app_slogan" translatable="false">100% FOSS keyboard, based on HeliBoard.</string>
+    <string name="about_developer_name" translatable="false">Rananjaya Chiranthaka Bandara</string>
 
 </resources>
