@@ -803,7 +803,8 @@ New dictionary:
     <!-- version for about screen -->
     <string name="version">Version</string>
     <!-- github repo link for about screen -->
-    <string name="about_github_link">View on GitHub</string>
+    <string name="about_github_link">Source code</string>
+    <string name="about_source_code_description">https://github.com/Rananjaya/HeliBoard/tree/personal</string>
     <!-- link to the wiki for about screen -->
     <string name="about_wiki_link">Go to Wiki</string>
     <!-- description for wiki link -->

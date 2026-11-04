@@ -161,14 +161,14 @@ fun createAboutSettings(context: Context) = listOf(
             icon = R.drawable.ic_settings_about_community
         )
      },
-    Setting(context, SettingsWithoutKey.GITHUB, R.string.about_github_link) {
+    Setting(context, SettingsWithoutKey.GITHUB, R.string.about_github_link, R.string.about_source_code_description) {
         val ctx = LocalContext.current
         Preference(
             name = it.title,
             description = it.description,
             onClick = {
                 val intent = Intent()
-                intent.data = Links.GITHUB.toUri()
+                intent.data = Links.SOURCE_CODE.toUri()
                 intent.action = Intent.ACTION_VIEW
                 ctx.startActivity(intent)
             },
