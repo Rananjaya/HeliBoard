@@ -804,7 +804,7 @@ New dictionary:
     <string name="version">Version</string>
     <!-- github repo link for about screen -->
     <string name="about_github_link">Source code</string>
-    <string name="about_source_code_description">https://github.com/Rananjaya/HeliBoard/tree/develop</string>
+    <string name="about_source_code_description">https://github.com/Rananjaya/RCBBoard/tree/develop</string>
     <!-- link to the wiki for about screen -->
     <string name="about_wiki_link">Go to Wiki</string>
     <!-- description for wiki link -->
