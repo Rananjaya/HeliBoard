@@ -82,7 +82,7 @@ Applied to this app, that text means:
 
 ### Notices shipped with the app
 
-The APK contains this file and the three licence texts below at `assets/third_party_licenses/`. The About screen's "Third-party resources" entry shows those same packaged files. The editable `.combined` sources are in this repository at `third_party/emoji-dictionaries/` and are not in the APK.
+The APK contains this file and the three licence texts below at `assets/third_party_licenses/`. The About screen's "Third-party resources" entry shows these packaged files, and also the Sinhala dictionary licence files named in the Sinhala section. The editable `.combined` sources are in this repository at `third_party/emoji-dictionaries/` and are not in the APK.
 
 ### Copyright and attribution
 
@@ -113,3 +113,26 @@ Dictionary creation: the source note credits the generation work to `eranl` in a
 | [`AGPL-3.0.txt`](AGPL-3.0.txt) | GNU Affero General Public License v3.0 | https://github.com/signalapp/emoji-search-index/blob/main/LICENSE.txt |
 
 The GPL-3.0 text for RCBBoard is in the repository root [`LICENSE`](../LICENSE).
+
+## Sinhala word dictionary
+
+RCBBoard bundles a compiled Sinhala spelling dictionary at `assets/dicts/main_si.dict`. It is a word dictionary for the `si` / `si_LK` keyboard. It is separate from `emoji_si.dict`, which is an emoji-name dictionary.
+
+### Source
+
+- Repository: https://github.com/laknath/Sinhala-Dictionary
+- Exact commit: `cfcfb500d9e24c4101d9146e2795ec2f0074f385`
+- Original file: `sinhala_full_word_list_2010-09-10.txt`
+- SHA-256 of that original file: `5e6d95b2e1196cd77639015f3e1155b15adc727b252d0c890cb7d80c198f00bb`
+
+The unchanged original file, the GPL-3.0 licence text, and the upstream copyright notice are in [`third_party/sinhala-dictionary/`](../third_party/sinhala-dictionary/). The editable conversion is `third_party/sinhala-dictionary/main_si.combined`. That `.combined` file is not packaged into the APK. `main_si.dict` is the dictionary compiled from it with `dicttool_aosp.jar makedict`. Every kept word has frequency 0 because the source has no frequency data.
+
+### Copyright and licence
+
+The OpenOffice extension in that commit, `si_LK.oxt`, contains `LICENSES-en.txt`. A verbatim copy is [`third_party/sinhala-dictionary/LICENSES-en.txt`](../third_party/sinhala-dictionary/LICENSES-en.txt). That notice names the copyright holder as Laknath Semage (2010), email `blaknath [at] gmail [dot] com`, and grants the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
+
+The licence for this dictionary is GPL-3.0-or-later. The full GPL-3.0 text copied for this component is [`third_party/sinhala-dictionary/GPL-3.0.txt`](../third_party/sinhala-dictionary/GPL-3.0.txt).
+
+The APK contains verbatim copies of those two files at `assets/third_party_licenses/LICENSES-en.txt` and `assets/third_party_licenses/GPL-3.0.txt`. The About screen lists them with the other packaged licence files. `sinhala_full_word_list_2010-09-10.txt` and `main_si.combined` are not packaged.
+
+Including this dictionary does not mean that Laknath Semage, Buddhika Laknath, or the other contributors to that repository endorse RCBBoard.

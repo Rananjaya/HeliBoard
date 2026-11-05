@@ -55,7 +55,12 @@ import kotlin.test.assertEquals
     ShadowFacilitator2::class,
 ])
 class InputLogicTest {
-    private val latinIME = Robolectric.setupService(LatinIME::class.java)
+    private val latinIME = run {
+        // must be set before LatinIME.onCreate loads settings, see the comment in reset()
+        org.robolectric.RuntimeEnvironment.getApplication().prefs()
+            .edit { putBoolean(Settings.PREF_INLINE_EMOJI_SEARCH, false) }
+        Robolectric.setupService(LatinIME::class.java)
+    }
     private val settingsValues get() = Settings.getValues()
     private val inputLogic get() = latinIME.mInputLogic
     private val connection: RichInputConnection get() = inputLogic.mConnection
@@ -640,6 +645,37 @@ class InputLogicTest {
         assertEquals("", text)
     }
 
+    @Test fun `emoji search result is inserted into host editor`() {
+        setText("hi ")
+        // ZWJ sequence, skin tone, flag, keycap (multi code point), plain single code point
+        val emojis = listOf("👩‍💻", "👍🏽", "🇱🇰", "1️⃣", "😀")
+        var expected = "hi "
+        emojis.forEach { emoji ->
+            emojiSearchDone(emoji) // repeated searches
+            expected += emoji
+            assertEquals(expected, text)
+            checkConnectionConsistency()
+        }
+        // typing continues normally after the inserted emoji
+        chainInput("ok")
+        assert(text == expected + "ok" || text == "$expected ok") { text }
+    }
+
+    @Test fun `emoji search result is not inserted while search field is still the editor`() {
+        setText("hi ")
+        ShadowInputMethodService.privateImeOptions = "helium314.keyboard.keyboard.emoji.search.500,"
+        emojiSearchDone("😀")
+        assertEquals("hi ", text)
+    }
+
+    @Test fun `emoji search done guard`() {
+        val action = helium314.keyboard.keyboard.emoji.EmojiSearchActivity.EMOJI_SEARCH_DONE_ACTION
+        assertEquals(true, StuffReceiver.shouldHandleEmojiSearchDone(action, false))
+        assertEquals(false, StuffReceiver.shouldHandleEmojiSearchDone(action, true))
+        assertEquals(false, StuffReceiver.shouldHandleEmojiSearchDone("other", false))
+        assertEquals(false, StuffReceiver.shouldHandleEmojiSearchDone(null, false))
+    }
+
     // emoRegex update to unicode 16.0 was required, https://github.com/HeliBorg/HeliBoard/issues/1760
     @Test fun `emojis deleted one by one`() {
         chainInput("\uD83E\uDEC6\uD83E\uDEC6\uD83E\uDEC6")
@@ -731,6 +767,9 @@ class InputLogicTest {
 
         // reset settings
         latinIME.prefs().edit { clear() }
+        // Inline emoji search opens the bundled emoji dictionary through native code (libjni_latinime),
+        // which is not available in JVM tests. The emoji search tests here use the broadcast path instead.
+        latinIME.prefs().edit { putBoolean(Settings.PREF_INLINE_EMOJI_SEARCH, false) }
 
         setText("") // (re)sets selection and composing word
     }
@@ -851,6 +890,19 @@ class InputLogicTest {
         latinIME.mHandler.onStartInputView(ei, false)
         handleMessages() // this is important so the composing span is set correctly
         checkConnectionConsistency()
+    }
+
+    // like tapping a result in EmojiSearchActivity: it broadcasts the selection from onStop
+    private fun emojiSearchDone(emoji: String) {
+        val stuffReceiver = LatinIME::class.java.getDeclaredField("mReceiver").apply { isAccessible = true }.get(latinIME)
+        val receiver = StuffReceiver::class.java.getDeclaredField("emojiSearchReceiver").apply { isAccessible = true }
+            .get(stuffReceiver) as android.content.BroadcastReceiver
+        val intent = android.content.Intent(helium314.keyboard.keyboard.emoji.EmojiSearchActivity.EMOJI_SEARCH_DONE_ACTION)
+            .putExtra(helium314.keyboard.keyboard.emoji.EmojiSearchActivity.IME_CLOSED_KEY, false)
+            .putExtra(helium314.keyboard.keyboard.emoji.EmojiSearchActivity.EMOJI_KEY, emoji)
+        receiver.onReceive(latinIME, intent)
+        delayedMessages.removeAll { it.callback != null } // posted switch back to emoji view, view-only
+        handleMessages()
     }
 
     // like selecting a suggestion from strip

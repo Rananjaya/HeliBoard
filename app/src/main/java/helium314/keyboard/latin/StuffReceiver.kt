@@ -51,7 +51,7 @@ class StuffReceiver(latinIME: LatinIME) {
                 TAG, "after activity closing. isEmojiSearch: ${isEmojiSearch()}. Intent: $intent" +
                     intent?.let { ". imeClosed: ${isImeClosed(intent)}. selected emoji: ${getSelectedEmoji(intent)}" }
             )
-            if (intent?.action != EmojiSearchActivity.EMOJI_SEARCH_DONE_ACTION || !isEmojiSearch()) return
+            if (intent == null || !shouldHandleEmojiSearchDone(intent.action, isEmojiSearch())) return
             if (isImeClosed(intent)) {
                 latinIME.requestHideSelf(0)
             } else {
@@ -166,6 +166,16 @@ class StuffReceiver(latinIME: LatinIME) {
         // The name of the scheme used by the Package Manager to warn of a new package installation, replacement or removal.
         private const val SCHEME_PACKAGE: String = "package"
         private val scope = CoroutineScope(Dispatchers.IO)
+
+        /**
+         * The search activity broadcasts its result from onStop, after its search field has lost focus.
+         * The emoji must be committed only once the IME is bound to the host app's editor again,
+         * i.e. when the current editor is NOT the emoji search field. Otherwise it would go to the
+         * (closing) search field, or be dropped.
+         */
+        @JvmStatic
+        fun shouldHandleEmojiSearchDone(action: String?, currentEditorIsEmojiSearch: Boolean): Boolean =
+            action == EmojiSearchActivity.EMOJI_SEARCH_DONE_ACTION && !currentEditorIsEmojiSearch
 
         private val ringerModeChangeReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
