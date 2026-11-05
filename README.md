@@ -1,10 +1,12 @@
-# HeliBoard
-HeliBoard is a privacy-conscious and customizable open-source keyboard, based on AOSP / OpenBoard.
-Does not use internet permission, and thus is 100% offline.
+# RCBBoard
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/helium314.keyboard/)
-[<img src="https://user-images.githubusercontent.com/663460/26973090-f8fdc986-4d14-11e7-995a-e7c5e79ed925.png" alt="Get APK from GitHub" height="80">](https://github.com/HeliBorg/HeliBoard/releases/latest)
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80">](https://apt.izzysoft.de/fdroid/index/apk/helium314.keyboard)
+RCBBoard is an independent fork of [HeliBoard](https://github.com/HeliBorg/HeliBoard) by Helium314. It is not an official HeliBoard release and is not endorsed by the original maintainers.
+
+RCBBoard is a privacy-conscious and customizable open-source keyboard. HeliBoard is based on AOSP / OpenBoard. RCBBoard does not use the internet permission, and thus is 100% offline.
+
+Source code: https://github.com/Rananjaya/RCBBoard/tree/develop
+
+The F-Droid, GitHub release, and IzzyOnDroid listings for HeliBoard install the original project, package `helium314.keyboard`. They do not install RCBBoard.
 
 ## Table of Contents
 
@@ -54,7 +56,7 @@ For [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ), [hidden features](htt
 
 ## Reporting Issues
 
-Whether you encountered a bug, or want to see a new feature in HeliBoard, you can contribute to the project by opening a new issue [here](https://github.com/HeliBorg/HeliBoard/issues). Your help is always welcome!
+RCBBoard source and issues are at https://github.com/Rananjaya/RCBBoard. Issues for the original HeliBoard project belong in [its own tracker](https://github.com/HeliBorg/HeliBoard/issues).
 
 Before opening a new issue, be sure to check the following:
  - **Does the issue already exist?** Make sure a similar issue has not been reported by browsing [existing issues](https://github.com/HeliBorg/HeliBoard/issues?q=). Please search open and closed issues. In case of feature requests you could also check the [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ) and [hidden features](https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features).
@@ -113,14 +115,14 @@ See [Contribution Guidelines](CONTRIBUTING.md)
 
 # License
 
-HeliBoard (as a fork of OpenBoard) is licensed under GNU General Public License v3.0.
+RCBBoard is licensed under GNU General Public License v3.0. It is a fork of HeliBoard, which is a fork of OpenBoard.
 
  > Permissions of this strong copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights.
 
 See repo's [LICENSE](/LICENSE) file.
 
 Since the app is based on Apache 2.0 licensed AOSP Keyboard, an [Apache 2.0](LICENSE-Apache-2.0) license file is provided.
-The icon is licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). A [license file](LICENSE-CC-BY-SA-4.0) is also included.
+The original HeliBoard icon is licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). A [license file](LICENSE-CC-BY-SA-4.0) is also included. RCBBoard uses its own launcher icon.
 
 # Credits
 - Icon by [Fabian OvrWrt](https://github.com/FabianOvrWrt) with contributions from [The Eclectic Dyslexic](https://github.com/the-eclectic-dyslexic)

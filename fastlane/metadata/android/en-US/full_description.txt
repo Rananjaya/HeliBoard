@@ -1,4 +1,6 @@
-HeliBoard is a privacy-conscious open-source keyboard, based on AOSP / OpenBoard.
+RCBBoard is an independent fork of HeliBoard by Helium314. It is not an official HeliBoard release and is not endorsed by the original maintainers.
+
+RCBBoard is a privacy-conscious open-source keyboard, based on HeliBoard, which is based on AOSP / OpenBoard.
 Does not use internet permission, and thus is 100% offline.
 
 Features:

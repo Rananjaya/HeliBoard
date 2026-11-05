@@ -52,6 +52,7 @@ import helium314.keyboard.latin.utils.Log
 import helium314.keyboard.latin.utils.SpannableStringUtils
 import helium314.keyboard.latin.utils.getActivity
 import helium314.keyboard.latin.utils.prefs
+import helium314.keyboard.settings.SettingsDestination
 import helium314.keyboard.settings.SettingsContainer
 import helium314.keyboard.settings.SettingsWithoutKey
 import helium314.keyboard.settings.Setting
@@ -77,6 +78,7 @@ fun AboutScreen(
         SettingsWithoutKey.VERSION,
         SettingsWithoutKey.DEVELOPER,
         SettingsWithoutKey.ORIGINAL_PROJECT,
+        SettingsWithoutKey.THIRD_PARTY,
         SettingsWithoutKey.LICENSE,
         SettingsWithoutKey.HIDDEN_FEATURES,
         SettingsWithoutKey.GITHUB_WIKI,
@@ -133,6 +135,14 @@ fun createAboutSettings(context: Context) = listOf(
                 ctx.startActivity(intent)
             },
             icon = R.drawable.ic_settings_about
+        )
+    },
+    Setting(context, SettingsWithoutKey.THIRD_PARTY, R.string.about_third_party, R.string.about_third_party_description) {
+        Preference(
+            name = it.title,
+            description = it.description,
+            onClick = { SettingsDestination.navigateTo(SettingsDestination.ThirdPartyLicenses) },
+            icon = R.drawable.ic_settings_about_license
         )
     },
     Setting(context, SettingsWithoutKey.LICENSE, R.string.license, R.string.gnu_gpl) {

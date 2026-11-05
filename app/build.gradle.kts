@@ -6,6 +6,36 @@ plugins {
     kotlin("plugin.compose") version "2.4.0"
 }
 
+abstract class SyncThirdPartyLicensesTask : DefaultTask() {
+    @get:InputFiles
+    abstract val licenceFiles: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun sync() {
+        val dest = outputDirectory.get().asFile.resolve("third_party_licenses")
+        dest.mkdirs()
+        licenceFiles.files.forEach { file ->
+            file.copyTo(dest.resolve(file.name), overwrite = true)
+        }
+    }
+}
+
+val thirdPartyLicenceNames = listOf(
+    "THIRD_PARTY_NOTICES.md",
+    "AGPL-3.0.txt",
+    "Unicode-3.0-CLDR.txt",
+    "Unicode-License-Signal-emoji-search-index.txt",
+)
+
+val syncThirdPartyLicenses = tasks.register<SyncThirdPartyLicensesTask>("syncThirdPartyLicenses") {
+    val licencesDir = rootProject.layout.projectDirectory.dir("licenses")
+    licenceFiles.setFrom(thirdPartyLicenceNames.map { licencesDir.file(it) })
+    outputDirectory.set(layout.buildDirectory.dir("generated/thirdPartyLicenseAssets"))
+}
+
 android {
     compileSdk = 37
 
@@ -107,6 +137,12 @@ android {
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
+    }
+
+    androidComponents.onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(syncThirdPartyLicenses) {
+            it.outputDirectory
+        }
     }
 
     namespace = "helium314.keyboard.latin"

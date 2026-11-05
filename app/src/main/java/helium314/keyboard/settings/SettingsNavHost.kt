@@ -31,6 +31,7 @@ import helium314.keyboard.settings.screens.PreferencesScreen
 import helium314.keyboard.settings.screens.SecondaryLayoutScreen
 import helium314.keyboard.settings.screens.SubtypeScreen
 import helium314.keyboard.settings.screens.TextCorrectionScreen
+import helium314.keyboard.settings.screens.ThirdPartyLicensesScreen
 import helium314.keyboard.settings.screens.ToolbarScreen
 import helium314.keyboard.settings.screens.gesturedata.GestureDataScreen
 import helium314.keyboard.settings.screens.gesturedata.ReviewScreen
@@ -83,6 +84,9 @@ fun SettingsNavHost(
         }
         composable(SettingsDestination.About) {
             AboutScreen(onClickBack = ::goBack)
+        }
+        composable(SettingsDestination.ThirdPartyLicenses) {
+            ThirdPartyLicensesScreen(onClickBack = ::goBack)
         }
         composable(SettingsDestination.TextCorrection) {
             TextCorrectionScreen(onClickBack = ::goBack)
@@ -147,6 +151,7 @@ fun SettingsNavHost(
 object SettingsDestination {
     const val Settings = "settings"
     const val About = "about"
+    const val ThirdPartyLicenses = "third_party_licenses"
     const val TextCorrection = "text_correction"
     const val Preferences = "preferences"
     const val Toolbar = "toolbar"

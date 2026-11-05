@@ -15,5 +15,3 @@ tools/*.txt
 *.patch
 *.diff
 *.sh
-# Personal About photo. Included in local release builds only, never committed.
-app/src/main/assets/about_developer_photo.jpg
