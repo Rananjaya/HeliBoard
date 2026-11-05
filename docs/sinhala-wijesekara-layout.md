@@ -18,7 +18,7 @@ Both use the same Sinhala dictionary, suggestions, autocorrection and learned wo
 
 ## How it works
 
-- **Normal and Shift layers** follow the Wijesekara arrangement of SLS 1134 (Rev. 2:2004). Each key's Normal and Shift characters match both the Microsoft "Sinhala - Wij 9" layout and the GNU/LKLUG Wijesekera keymap. The two sources differ on one key (X), noted below.
+- **Normal and Shift layers** follow the Wijesekara arrangement as published in the GNU/LKLUG keymap, which states that it follows SLS 1134 (Rev. 2:2004); the SLS 1134 document itself was not consulted. Each key's Normal and Shift characters match both the Microsoft "Sinhala - Wij 9" layout and the GNU/LKLUG Wijesekera keymap. The two sources differ on one key (X), noted below.
 - **Shift** applies only when you press Shift (or Caps Lock). Automatic capitalisation at the start of a sentence does not switch layers, because Sinhala has no upper case.
 - **Long-press** adds the characters that a PC keyboard reaches with AltGr: independent vowels (ආ ඇ ඈ ඌ ඒ ඓ ඕ ඖ ඎ ඏ ඐ) and two-part vowel signs (ේ ෛ ො ෝ ෞ ෲ ෳ). Which key each one is on is an RCBBoard choice (grouped with a related character); the characters themselves are those of the standard.
 - **Independent vowels** are typed directly as single characters (for example ආ is U+0D86). They are never built from a vowel sign.
@@ -116,10 +116,10 @@ No code or data was copied from these sources. The key positions of a keyboard s
 | Source | Used for | Licence |
 |---|---|---|
 | [Microsoft "Sinhala - Wij 9" (KBDSW09), via kbdlayout.info](https://kbdlayout.info/kbdsw09/) | Normal, Shift and AltGr characters with code points | © Microsoft; used as a reference only |
-| [GNU/LKLUG Sinhala Wijesekera Compatible Keymap](https://ftp.gwdg.de/pub/gnu/www/savannah-checkouts/non-gnu/sinhala/doc/keymaps/sinhala-keyboard_1.html) | Cross-check of Normal and Shift; follows SLS 1134 Rev. 2:2004 | None stated; reference only |
-| [para-d/si-wijesekara-keyboard](https://github.com/para-d/si-wijesekara-keyboard) | Cross-check (XKB file) | Unlicense |
+| [GNU/LKLUG Sinhala Wijesekera Compatible Keymap](https://ftp.gwdg.de/pub/gnu/www/savannah-checkouts/non-gnu/sinhala/doc/keymaps/sinhala-keyboard_1.html) | Cross-check of Normal and Shift; follows SLS 1134 Rev. 2:2004 | Not stated on the page; the Savannah project's licence could not be verified. Reference only. |
+| [para-d/si-wijesekara-keyboard](https://github.com/para-d/si-wijesekara-keyboard) | Cross-check (XKB file) | Unlicense (repository). Its `lk` file is a modified version of the Sinhala XKB file by Harshula Jayasuriya, which states no licence. Reference only. |
 | [Sithakuru](https://codeberg.org/sinhala/sithakuru) | Checked; its layout file could not be read | GPL-3.0-only; nothing used |
-| HeliBoard `sinhala.json` | JSON structure | GPL-3.0 (same as RCBBoard) |
+| HeliBoard `sinhala.json` | JSON format only (no keys copied) | GPL-3.0 in HeliBoard; the layout originates from AOSP (Copyright 2014, The Android Open Source Project, Apache-2.0) via OpenBoard |
 
 ## Tests
 

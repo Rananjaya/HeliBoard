@@ -136,3 +136,13 @@ The licence for this dictionary is GPL-3.0-or-later. The full GPL-3.0 text copie
 The APK contains verbatim copies of those two files at `assets/third_party_licenses/LICENSES-en.txt` and `assets/third_party_licenses/GPL-3.0.txt`. The About screen lists them with the other packaged licence files. `sinhala_full_word_list_2010-09-10.txt` and `main_si.combined` are not packaged.
 
 Including this dictionary does not mean that Laknath Semage, Buddhika Laknath, or the other contributors to that repository endorse RCBBoard.
+
+## Sinhala (Wijesekara) keyboard layout
+
+`assets/layouts/main/sinhala_wijesekara.json` was written for RCBBoard and is licensed with the app under GPL-3.0. It contains no code or data copied from other projects. Its key positions follow the Wijesekara keyboard standard (SLS 1134). They were checked against these references, which were only read, not copied:
+
+- Microsoft "Sinhala - Wij 9" (KBDSW09), as listed on kbdlayout.info. © Microsoft Corporation.
+- GNU/LKLUG "Sinhala Wijesekera Compatible Keymap" (nongnu.org Sinhala project).
+- para-d/si-wijesekara-keyboard (Unlicense).
+
+Sithakuru (GPL-3.0-only) was consulted, but its layout could not be read and nothing from it was used. Mentioning these projects does not mean they endorse RCBBoard.
