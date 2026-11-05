@@ -1,0 +1,393 @@
+[
+  [
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dd6"
+      },
+      "default": {
+        "label": "\u0dd4"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0d8b",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0d8c"
+            }
+          ]
+        }
+      },
+      "default": {
+        "label": "\u0d85",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0d86"
+            },
+            {
+              "label": "\u0d87"
+            },
+            {
+              "label": "\u0d88"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dd1"
+      },
+      "default": {
+        "label": "\u0dd0"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0d8d",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0d8e"
+            }
+          ]
+        }
+      },
+      "default": {
+        "label": "\u0dbb"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0d94",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0d95"
+            },
+            {
+              "label": "\u0d96"
+            }
+          ]
+        }
+      },
+      "default": {
+        "label": "\u0d91",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0d92"
+            },
+            {
+              "label": "\u0d93"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dc1"
+      },
+      "default": {
+        "label": "\u0dc4"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0db9"
+      },
+      "default": {
+        "label": "\u0db8"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dc2"
+      },
+      "default": {
+        "label": "\u0dc3"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0db0"
+      },
+      "default": {
+        "label": "\u0daf"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0da1"
+      },
+      "default": {
+        "label": "\u0da0"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0da5"
+      },
+      "default": {
+        "label": "\u0da4"
+      }
+    }
+  ],
+  [
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0ddf"
+      },
+      "default": {
+        "label": "\u0dca",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0df3"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dd3"
+      },
+      "default": {
+        "label": "\u0dd2"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dd8"
+      },
+      "default": {
+        "label": "\u0dcf",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0df2"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dc6"
+      },
+      "default": {
+        "label": "\u0dd9",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0dda"
+            },
+            {
+              "label": "\u0ddb"
+            },
+            {
+              "label": "\u0ddc"
+            },
+            {
+              "label": "\u0ddd"
+            },
+            {
+              "label": "\u0dde"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0da8"
+      },
+      "default": {
+        "label": "\u0da7"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dca\u200d\u0dba"
+      },
+      "default": {
+        "label": "\u0dba"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dc5\u0dd4"
+      },
+      "default": {
+        "label": "\u0dc0"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dab"
+      },
+      "default": {
+        "label": "\u0db1"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0d9b"
+      },
+      "default": {
+        "label": "\u0d9a"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dae"
+      },
+      "default": {
+        "label": "\u0dad"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dbb\u0dca\u200d"
+      },
+      "default": {
+        "label": "\u0dca\u200d\u0dbb"
+      }
+    }
+  ],
+  [
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0d9e"
+      },
+      "default": {
+        "label": "\u0d82",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0d83"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0da3"
+      },
+      "default": {
+        "label": "\u0da2"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0daa"
+      },
+      "default": {
+        "label": "\u0da9"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0d8a"
+      },
+      "default": {
+        "label": "\u0d89"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0db7"
+      },
+      "default": {
+        "label": "\u0db6"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0db5"
+      },
+      "default": {
+        "label": "\u0db4"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0dc5"
+      },
+      "default": {
+        "label": "\u0dbd",
+        "popup": {
+          "relevant": [
+            {
+              "label": "\u0d8f"
+            },
+            {
+              "label": "\u0d90"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "label": "\u0d9d"
+      },
+      "default": {
+        "label": "\u0d9c"
+      }
+    },
+    {
+      "$": "shift_state_selector",
+      "manualOrLocked": {
+        "code": 8205,
+        "label": "ZWJ"
+      },
+      "default": {
+        "label": "\u0dca\u200d",
+        "popup": {
+          "relevant": [
+            {
+              "code": 8204,
+              "label": "ZWNJ"
+            }
+          ]
+        }
+      }
+    }
+  ]
+]

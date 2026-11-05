@@ -30,6 +30,7 @@ import helium314.keyboard.latin.utils.ScriptUtils
 import helium314.keyboard.latin.utils.SubtypeSettings
 import helium314.keyboard.latin.utils.getTimestampFormatter
 import helium314.keyboard.latin.utils.prefs
+import helium314.keyboard.latin.utils.mainLayoutName
 import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.robolectric.Robolectric
@@ -44,6 +45,7 @@ import kotlin.streams.asSequence
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 @Config(shadows = [
@@ -674,6 +676,139 @@ class InputLogicTest {
         assertEquals(false, StuffReceiver.shouldHandleEmojiSearchDone(action, true))
         assertEquals(false, StuffReceiver.shouldHandleEmojiSearchDone("other", false))
         assertEquals(false, StuffReceiver.shouldHandleEmojiSearchDone(null, false))
+    }
+
+    // ---- Sinhala (Wijesekara) layout: typing through the input pipeline ----
+    // Key outputs are those of layouts/main/sinhala_wijesekara.json (checked key by key in
+    // SinhalaWijesekaraLayoutTest). A key with one code point is sent as a key event, a
+    // multi-code-point key (yansaya, rakaransaya, repaya, join) as text, like on a device.
+
+    private val wAl = "්"
+    private val wZwj = "‍"
+    private val wRakaransaya = wAl + wZwj + "ර" // ` key
+    private val wYansaya = wAl + wZwj + "ය"     // Shift+H
+    private val wRepaya = "ර" + wAl + wZwj      // Shift+`
+    private val wJoin = wAl + wZwj                   // \ key
+
+    private fun switchToWijesekara() {
+        val subtype = SubtypeSettings.getResourceSubtypesForLocale("si-LK".constructLocale())
+            .first { it.mainLayoutName() == "sinhala_wijesekara" }
+        latinIME.switchToSubtype(subtype)
+        currentScript = ScriptUtils.SCRIPT_SINHALA
+        setText("")
+    }
+
+    private fun pressKeys(vararg keys: String) {
+        for (key in keys) {
+            if (key.codePointCount(0, key.length) == 1) input(key.codePointAt(0))
+            else input(key)
+        }
+    }
+
+    private fun codePoints(s: String) = s.codePoints().toArray().joinToString(" ") { "U+%04X".format(it) }
+
+    private fun assertTyped(expected: String, vararg keys: String) {
+        switchToWijesekara()
+        pressKeys(*keys)
+        assertEquals(codePoints(expected), codePoints(text), "keys ${keys.joinToString(",") { codePoints(it) }}")
+    }
+
+    @Test fun `wijesekara independent vowels are typed directly`() {
+        // normal / Shift / long-press keys; each is one code point, nothing is combined
+        for (vowel in listOf("අ", "ආ", "උ", "ඌ", "ඉ", "ඊ", "එ", "ඒ", "ඔ", "ඕ")) {
+            assertTyped(vowel, vowel)
+        }
+    }
+
+    @Test fun `wijesekara consonants and consonant vowel combinations`() {
+        assertTyped("ක", "ක")                       // ක
+        assertTyped("කා", "ක", "ා")       // කා = ක + ා
+        assertTyped("ගා", "ග", "ා")       // ගා
+        assertTyped("මා", "ම", "ා")       // මා
+        assertTyped("කෙ", "ක", "ෙ")       // කෙ: Unicode order, sign after consonant
+        assertTyped("කො", "ක", "ො")       // කො from the ෙ long-press (single code point)
+    }
+
+    @Test fun `wijesekara ZWJ sequences`() {
+        // ශ්‍රී = ශ (Shift+Y) + rakaransaya (` key) + ී (Shift+S)
+        assertTyped("ශ්‍රී", "ශ", wRakaransaya, "ී")
+        assertTyped("ක්‍ය", "ක", wYansaya)                   // ක්‍ය
+        assertTyped("කර්‍ම", "ක", wRepaya, "ම")    // කර්‍ම
+        assertTyped("ක්‍ෂ", "ක", wJoin, "ෂ")           // ක්‍ෂ via join key
+    }
+
+    @Test fun `wijesekara keeps typed sequences exactly, without merging`() {
+        // අ + ා is not turned into ආ, and ෙ + ා is not composed into ො: what is typed is what is sent
+        assertTyped("අා", "අ", "ා")
+        assertTyped("කො", "ක", "ෙ", "ා")
+    }
+
+    @Test fun `wijesekara backspace`() {
+        switchToWijesekara()
+        pressKeys("\u0D9A", "\u0DCF") // කා
+        functionalKeyPress(KeyCode.DELETE)
+        assertEquals(codePoints("\u0D9A"), codePoints(text)) // removes the vowel sign only
+
+        // ශ්‍රී: ී, then ර, then the cluster ශ + al-lakuna + ZWJ together (no orphan ZWJ is left).
+        // Deletion is done by the shared input logic, so this is the same on every Sinhala layout.
+        switchToWijesekara()
+        pressKeys("\u0DC1", wRakaransaya, "\u0DD3")
+        val expectedSteps = listOf("\u0DC1\u0DCA\u200D\u0DBB", "\u0DC1\u0DCA\u200D", "")
+        val actualSteps = mutableListOf<String>()
+        while (text.isNotEmpty() && actualSteps.size < 6) {
+            functionalKeyPress(KeyCode.DELETE)
+            actualSteps.add(codePoints(text))
+        }
+        assertEquals(expectedSteps.map { codePoints(it) }, actualSteps)
+    }
+
+    @Test fun `wijesekara composing word for suggestions`() {
+        // ordinary keys build one composing word, so suggestions and learning see the whole word
+        switchToWijesekara()
+        pressKeys("\u0D9A", "\u0DCF", "\u0DB8", "\u0DBB") // කාමර
+        assertEquals("\u0D9A\u0DCF\u0DB8\u0DBB", composer.typedWord)
+
+        // multi-code-point keys commit their text directly. This is the same on the existing
+        // Sinhala layout (its ්‍ර key), so it is a shared limitation, not a change in behaviour.
+        switchToWijesekara()
+        pressKeys("\u0DC1", wRakaransaya, "\u0DD3")
+        val wijesekaraComposing = composer.typedWord
+        latinIME.switchToSubtype(SubtypeSettings.getResourceSubtypesForLocale("si-LK".constructLocale())
+            .first { it.mainLayoutName() == "sinhala" })
+        currentScript = ScriptUtils.SCRIPT_SINHALA
+        setText("")
+        pressKeys("\u0DC1", wRakaransaya, "\u0DD3")
+        assertEquals(composer.typedWord, wijesekaraComposing)
+    }
+
+    @Test fun `switching between English, Wijesekara and the existing Sinhala layout`() {
+        val en = SubtypeSettings.getResourceSubtypesForLocale("en-US".constructLocale()).first()
+        val siExisting = SubtypeSettings.getResourceSubtypesForLocale("si-LK".constructLocale())
+            .first { it.mainLayoutName() == "sinhala" }
+
+        latinIME.switchToSubtype(en)
+        currentScript = ScriptUtils.SCRIPT_LATIN
+        setText("")
+        chainInput("ok")
+        assertEquals("ok", text)
+
+        assertTyped("කා", "ක", "ා")
+        // the test InputMethodManager always reports English, so check the stored selection
+        assertTrue(latinIME.prefs().getString(Settings.PREF_SELECTED_SUBTYPE, "")!!.contains("MAIN:sinhala_wijesekara"))
+
+        latinIME.switchToSubtype(siExisting)
+        currentScript = ScriptUtils.SCRIPT_SINHALA
+        setText("")
+        pressKeys("ම", "ා") // මා on the existing layout
+        assertEquals("මා", text)
+        val selected = latinIME.prefs().getString(Settings.PREF_SELECTED_SUBTYPE, "")!!
+        assertTrue(selected.contains("MAIN:sinhala") && !selected.contains("sinhala_wijesekara"), selected)
+
+        latinIME.switchToSubtype(en)
+        currentScript = ScriptUtils.SCRIPT_LATIN
+        setText("")
+        chainInput("hi")
+        assertEquals("hi", text)
     }
 
     // emoRegex update to unicode 16.0 was required, https://github.com/HeliBorg/HeliBoard/issues/1760
