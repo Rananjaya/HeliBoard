@@ -93,6 +93,23 @@ Safety:
 - Tags and releases created with the workflow token do not start other workflows.
 - If a production secret is missing, the run stops before building. An unsigned build is never published.
 
+### Production dry run
+
+To test the whole production pipeline without publishing anything, start the release with **`dry_run`** ticked (same commit SHA, branch `develop`). The run is named *"Release dry run &lt;commit&gt;"*.
+
+| | Real release | Dry run |
+| --- | --- | --- |
+| Commit checks (on `develop`, successful QA run, not older than the latest release) | yes | yes, the same |
+| Approval in the `release` environment | yes | yes, the same |
+| Version | from the commits (nothing published if only docs/CI/tests changed) | the same; if there are no app changes, the next patch version is built anyway |
+| Release APK built from the exact commit, signed with the production key and verified | yes | yes, the same |
+| Release notes and `SHA256SUMS.txt` | yes | yes (notes marked as a dry run) |
+| Git tag | created | **not created** |
+| GitHub Release | published with the APK | **none, not even a draft** |
+| What is kept | the release | **only** `SHA256SUMS.txt` and `release-notes.md` as a workflow artifact (14 days); the production-signed APK is **not** uploaded |
+
+A dry run changes no tags, releases or versions, so the next real release is not affected. `SHA256SUMS.txt` records the checksum of the APK that the dry run built and signed.
+
 ## The same commit in every stage
 
 Every stage builds a commit SHA, never "whatever `develop` is now":

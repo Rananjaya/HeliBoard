@@ -5,8 +5,13 @@
 # universal APK, after approval in the 'release' environment. Only runs in Rananjaya/RCBBoard
 # on develop. Never pushes commits, never force-pushes, never touches main or the HeliBoard
 # upstream repository. See docs/ci-cd.md.
+#
+# dry_run: the same gates, approval, build, production signing and verification, but no tag,
+# no GitHub Release (not even a draft) and no APK upload; only SHA256SUMS.txt and the release
+# notes are kept as a workflow artifact. Also builds when there are no app changes (as the
+# next patch version), so the whole pipeline can be tested without publishing anything.
 name: Release
-run-name: Release ${{ inputs.commit }}
+run-name: ${{ inputs.dry_run && 'Release dry run' || 'Release' }} ${{ inputs.commit }}
 
 on:
   workflow_dispatch:
@@ -20,6 +25,10 @@ on:
         type: choice
         options: [auto, patch, minor, major]
         default: auto
+      dry_run:
+        description: "Dry run: build, sign and verify, but do not tag or publish anything"
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -50,9 +59,10 @@ jobs:
       commit: ${{ steps.gate.outputs.sha }}
       qa_run: ${{ steps.gate.outputs.run_url }}
       release: ${{ steps.publish.outputs.release }}
-      version: ${{ steps.next.outputs.version }}
-      version_code: ${{ steps.next.outputs.version_code }}
-      tag: ${{ steps.next.outputs.tag }}
+      # the dry-run version is only set when a dry run has no app changes to release
+      version: ${{ steps.dryrun.outputs.version || steps.next.outputs.version }}
+      version_code: ${{ steps.dryrun.outputs.version_code || steps.next.outputs.version_code }}
+      tag: ${{ steps.dryrun.outputs.tag || steps.next.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -83,15 +93,30 @@ jobs:
           python3 .github/scripts/next_version.py --head "$COMMIT" --bump "$BUMP"
           --repo "$GITHUB_REPOSITORY" --github-output "$GITHUB_OUTPUT"
 
+      # Dry run without app changes: build the next patch version anyway, so the build and
+      # signing can be tested. Only used for the dry run; never tagged or published.
+      - name: Dry-run version
+        id: dryrun
+        if: inputs.dry_run && steps.next.outputs.release != 'true'
+        env:
+          COMMIT: ${{ steps.gate.outputs.sha }}
+        run: >-
+          python3 .github/scripts/next_version.py --head "$COMMIT" --bump patch
+          --github-output "$GITHUB_OUTPUT"
+
       - name: Decide whether to publish
         id: publish
         env:
           GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
           RELEASE: ${{ steps.next.outputs.release }}
           STATUS: ${{ steps.next.outputs.status }}
-          TAG: ${{ steps.next.outputs.tag }}
+          TAG: ${{ steps.dryrun.outputs.tag || steps.next.outputs.tag }}
         run: |
-          if [ "$RELEASE" != "true" ]; then
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run: build, sign and verify $TAG without tagging or publishing."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          elif [ "$RELEASE" != "true" ]; then
             echo "No app changes since the last release (only docs, CI or tests): nothing to publish."
             echo "release=false" >> "$GITHUB_OUTPUT"
           elif gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
@@ -103,15 +128,17 @@ jobs:
           fi
 
   release:
-    name: Build, sign and publish ${{ needs.version.outputs.tag }}
+    name: "${{ inputs.dry_run && 'Dry run: build and sign' || 'Build, sign and publish' }} ${{ needs.version.outputs.tag }}"
     needs: version
     if: needs.version.outputs.release == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    environment: release # signing secrets; add yourself as required reviewer to approve each release
+    # signing secrets and required reviewer approval, also for dry runs
+    environment: release
     permissions:
-      contents: write # create the tag and the GitHub Release
+      contents: write # create the tag and the GitHub Release (both skipped in a dry run)
     env:
+      DRY_RUN: ${{ inputs.dry_run }}
       COMMIT: ${{ needs.version.outputs.commit }}
       QA_RUN: ${{ needs.version.outputs.qa_run }}
       VERSION: ${{ needs.version.outputs.version }}
@@ -232,9 +259,45 @@ jobs:
 
           Check with \`apksigner verify --print-certs RCBBoard-$VERSION.apk\`. The file checksum is in \`SHA256SUMS.txt\`.
           EOF
+          if [ "$DRY_RUN" = "true" ]; then
+            { echo "> **Dry run:** built, signed and verified for testing only. Not tagged, not published; the APK was not kept."
+              echo
+              cat "$RUNNER_TEMP/release-notes.md"; } > "$RUNNER_TEMP/release-notes.tmp"
+            mv "$RUNNER_TEMP/release-notes.tmp" "$RUNNER_TEMP/release-notes.md"
+          fi
           cat "$RUNNER_TEMP/release-notes.md"
 
+      # Dry run only: keep the checksum and the notes, never the production-signed APK.
+      - name: Upload dry-run results (checksum and release notes, no APK)
+        if: inputs.dry_run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-dry-run-${{ env.VERSION }}-run${{ github.run_number }}
+          path: |
+            ${{ runner.temp }}/dist/SHA256SUMS.txt
+            ${{ runner.temp }}/release-notes.md
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Dry-run summary
+        if: inputs.dry_run
+        run: |
+          {
+            echo "## Release dry run: nothing was published"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| **Commit** | \`$COMMIT\` |"
+            echo "| **QA run** | $QA_RUN |"
+            echo "| **Version built** | $VERSION (versionCode $VERSION_CODE) |"
+            echo "| **Signing** | production key, certificate \`$EXPECTED_CERT_SHA256\` verified |"
+            echo "| **APK SHA-256** | \`$(cut -d' ' -f1 "$RUNNER_TEMP/dist/SHA256SUMS.txt")\` |"
+            echo "| **Tag / GitHub Release** | not created |"
+            echo "| **Artifact** | SHA256SUMS.txt and release-notes.md only (the APK is not uploaded) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create tag ${{ env.TAG }}
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -256,6 +319,7 @@ jobs:
       # Only marked as the latest release if no newer rcbboard-v* release is published, so
       # re-running an older failed release never takes "latest" away from a newer one.
       - name: Create GitHub Release ${{ env.TAG }}
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
