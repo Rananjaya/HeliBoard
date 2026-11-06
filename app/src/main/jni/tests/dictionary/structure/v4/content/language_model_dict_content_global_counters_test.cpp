@@ -18,6 +18,8 @@
 
 #include <gtest/gtest.h>
 
+#include <climits>
+
 #include "dictionary/structure/v4/ver4_dict_constants.h"
 
 namespace latinime {
