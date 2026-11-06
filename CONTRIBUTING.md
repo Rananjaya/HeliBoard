@@ -12,7 +12,7 @@ This document has two parts: **RCBBoard rules** (Part 1) and **technical notes i
 
 ## Getting started
 
-- Repository: https://github.com/Rananjaya/RCBBoard (pull requests go to the `develop` branch)
+- Repository: https://github.com/Rananjaya/RCBBoard (pull requests go to `Rananjaya/RCBBoard:develop`, never to HeliBoard; see [Where pull requests go](#where-pull-requests-go))
 - Java: building needs **JDK 17 or newer**; the JVM unit tests need **JDK 21 or newer** (Robolectric runs Android SDK 36, which needs Java 21). The JDK bundled with Android Studio works for both.
 - Never commit `local.properties`, keystores, passwords or other machine-specific or secret files.
 
@@ -47,12 +47,32 @@ Please test your change and say in the pull request how you tested it:
 ## Git workflow
 
 - `main` tracks the original HeliBoard upstream. Do not commit RCBBoard work to it.
-- `develop` is the RCBBoard branch. Pull requests target `develop`.
+- `develop` is the RCBBoard branch. Pull requests target `Rananjaya/RCBBoard:develop` (see [Where pull requests go](#where-pull-requests-go)).
 - Use one branch per topic, for example `feature/…`, `security/…`, `chore/…` or `docs/…`.
 - Changes reach `develop` through pull requests, which I merge.
 - Never push to the original HeliBoard repository.
 - Keep security fixes in their own commits, separate from unrelated changes.
 - Do not rewrite history that has already been pushed.
+
+## Where pull requests go
+
+RCBBoard is a GitHub fork of HeliBoard, so there are two repositories:
+
+- `origin` = [Rananjaya/RCBBoard](https://github.com/Rananjaya/RCBBoard): RCBBoard itself. All RCBBoard work is pushed here.
+- `upstream` = [HeliBorg/HeliBoard](https://github.com/HeliBorg/HeliBoard): the original project. RCBBoard only fetches from it.
+
+Every RCBBoard pull request (features, fixes, security work, documentation) must target:
+
+- base repository: **`Rananjaya/RCBBoard`**
+- base branch: **`develop`**
+
+`main` only tracks the original HeliBoard upstream and is never the base for RCBBoard pull requests. Never open RCBBoard pull requests against `HeliBorg/HeliBoard`.
+
+Because RCBBoard is a fork, GitHub's "Compare & pull request" button and the link printed by `git push` may preselect `HeliBorg/HeliBoard` and `main`. Always check the base repository and branch before creating the pull request, or open it with this link (replace `BRANCH` with your branch name):
+
+`https://github.com/Rananjaya/RCBBoard/compare/develop...BRANCH?quick_pull=1`
+
+If a pull request was opened against HeliBoard by mistake, close it right away.
 
 ## Pull requests
 
