@@ -1,3 +1,31 @@
-Please make sure you are at least reasonably close to the contribution guidelines, especially regarding LLM use: https://github.com/HeliBorg/HeliBoard/blob/main/CONTRIBUTING.md#guidelines
-Due to maintainer availability, your PR may take quite some time to be addressed. This especially applies to large PRs.
-<!-- (please remove the text above before submitting the PR) -->
+<!--
+Thanks for contributing to RCBBoard! Please target the `develop` branch, keep to one topic,
+and see CONTRIBUTING.md. Do not post details of security problems here; see SECURITY.md.
+-->
+
+## What changed and why
+
+## How I tested it
+
+<!-- Commands you ran (unit tests, native tests, debug build) and results; device or emulator used. -->
+
+## Security and privacy
+
+<!-- Any effect on permissions, network access, stored data, imported files or native code? Otherwise write "None". -->
+
+- [ ] No `INTERNET` permission, network access or new permissions added
+- [ ] No secrets, keystores or `local.properties` included
+
+## Changes to existing behaviour or data
+
+<!-- Anything existing users would notice (settings, dictionaries, learned words)? Otherwise write "None". -->
+
+## Screenshots
+
+<!-- For UI changes; otherwise delete this section. -->
+
+## Notes
+
+<!-- Optional: AI tools used, related links, anything else. -->
+
+- [ ] My code is my own or GPL-3.0 compatible (with its source named), and existing copyright notices are kept

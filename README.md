@@ -2,6 +2,8 @@
 
 RCBBoard is an independent fork of [HeliBoard](https://github.com/HeliBorg/HeliBoard) by Helium314. It is not an official HeliBoard release and is not endorsed by the original maintainers.
 
+RCBBoard is a personal project by [Rananjaya](https://github.com/Rananjaya), made mainly for my own use and to share with friends and family. Most of the code comes from HeliBoard and the projects it is based on (see [Credits](#credits)); RCBBoard adds its own changes, such as a bundled Sinhala dictionary and the Sinhala (Wijesekara) layout.
+
 RCBBoard is a privacy-conscious and customizable open-source keyboard. HeliBoard is based on AOSP / OpenBoard. RCBBoard does not use the internet permission, and thus is 100% offline.
 
 Source code: https://github.com/Rananjaya/RCBBoard/tree/develop
@@ -56,28 +58,28 @@ For [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ), [hidden features](htt
 
 ## Reporting Issues
 
-RCBBoard source and issues are at https://github.com/Rananjaya/RCBBoard. Issues for the original HeliBoard project belong in [its own tracker](https://github.com/HeliBorg/HeliBoard/issues).
+RCBBoard is developed at https://github.com/Rananjaya/RCBBoard. It is a personal project, so there is no guarantee that a report will be answered or a problem fixed. Problems with the original HeliBoard app belong in [its own tracker](https://github.com/HeliBorg/HeliBoard/issues).
 
 Before opening a new issue, be sure to check the following:
- - **Does the issue already exist?** Make sure a similar issue has not been reported by browsing [existing issues](https://github.com/HeliBorg/HeliBoard/issues?q=). Please search open and closed issues. In case of feature requests you could also check the [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ) and [hidden features](https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features).
- - **Is the issue still relevant?** Make sure your issue is not already fixed in the latest version of HeliBoard.
+ - **Does the issue already exist?** Search the open and closed issues of RCBBoard first. In case of feature requests you could also check HeliBoard's [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ) and [hidden features](https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features), which also apply to RCBBoard.
+ - **Is the issue still relevant?** Make sure your issue is not already fixed in the latest RCBBoard build.
  - **Is it a single topic?** If you want to suggest multiple things, open multiple issues.
- - **Did you use the issue template?** It is important to make life of our kind contributors easier by avoiding issues that miss key information to their resolution.
- - **Is it written by a human?** Do not use LLMs or similar to generate issues. Having LLMs help with translation or similar is acceptable, but must be disclosed. See also [AI_USAGE.md](AI_USAGE.md)
-Note that issues that that ignore part of the issue template will likely get treated with very low priority, as often they are needlessly hard to read or understand (e.g. huge screenshots, not providing a proper description, or addressing multiple topics). Blatant violation of the guidelines may result in the issue getting closed.
+ - **Did you use the issue template?** It helps to have all the information needed to understand and fix the problem.
+ - **Are you responsible for what you wrote?** AI tools may help you write or translate an issue, but you are responsible for its content. See [AI_USAGE.md](AI_USAGE.md).
+ - **Is it a security vulnerability?** Do not open a public issue. Follow [SECURITY.md](SECURITY.md) instead.
+Issues that ignore the issue template are hard to read and understand (e.g. huge screenshots, no proper description, or several topics in one issue) and may get closed.
 
 If you're interested, you can read the following useful text about effective bug reporting (a bit longer read): https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
 
 ## Translations
-Translations can be added using [Weblate](https://translate.codeberg.org/projects/heliboard/). You will need an account to update translations and add languages. Add the language you want to translate to in Languages -> Manage translated languages in the top menu bar.
-Updating translations in a PR will not be accepted, as it may cause conflicts with Weblate translations.
-
-Some notes on translations
-* when translating metadata, translating the changelogs is rather useless. It's available as it was requested by translators.
-* the `hidden_features_message` is horrible to translate with Weblate, and serves little benefit as it's just a copy of what's already in the wiki: https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features. It's been made available in the app on user request/contribution.
+RCBBoard does not run its own translation platform.
+* Translations inherited from HeliBoard arrive with upstream merges. To improve them, please contribute to [HeliBoard on Weblate](https://translate.codeberg.org/projects/heliboard/), so that both projects benefit and upstream merges do not conflict.
+* Pull requests translating RCBBoard-specific strings are welcome. Please do not change inherited translations in RCBBoard pull requests.
 
 ## To Community
-There is the [discussions on GitHub](https://github.com/HeliBorg/HeliBoard/discussions), or if you prefer a more open network there is [Lemmy](https://lemmy.world/c/Heliboard).
+RCBBoard does not have its own community forum. Questions about RCBBoard belong in the [RCBBoard repository](https://github.com/Rananjaya/RCBBoard).
+
+The HeliBoard community shares themes, layouts and dictionaries that usually work in RCBBoard too, in [HeliBoard's GitHub discussions](https://github.com/HeliBorg/HeliBoard/discussions) and on [Lemmy](https://lemmy.world/c/Heliboard). Please do not ask HeliBoard's community for help with RCBBoard-specific problems.
 You can share your themes, layouts and dictionaries with other people:
 * Themes can be saved and loaded using the menu on top-right in the _adjust colors_ screen
   * you can share custom colors in a separate [discussion section](https://github.com/HeliBorg/HeliBoard/discussions/categories/custom-colors)
@@ -96,19 +98,19 @@ You can share your themes, layouts and dictionaries with other people:
   * note that there will not be any further dictionaries added to this app, but you can add dictionaries to the [dictionaries repository](https://codeberg.org/Helium314/aosp-dictionaries)
 
 ## Code Contribution
-See [Contribution Guidelines](CONTRIBUTING.md)
+See [Contribution Guidelines](CONTRIBUTING.md), [AI_USAGE.md](AI_USAGE.md), the [Code of Conduct](CODE_OF_CONDUCT.md) and the [Security Policy](SECURITY.md).
 
 # Links
 * Info
   * [Wiki](https://github.com/HeliBorg/HeliBoard/wiki), including FAQ, help on customizing layouts, and gesture data gathering
   * [Layout documentation](layouts.md) (more technical info regarding layout customization)
   * [For creating custom dictionaries](https://codeberg.org/Helium314/aosp-dictionaries#wordlist-information) (see also top of the linked readme)
-* Community
+* HeliBoard community (upstream project)
   * [Lemmy](https://lemmy.world/c/Heliboard)
   * [Reddit](https://www.reddit.com/r/HeliBoard)
   * GitHub [discussions](https://github.com/HeliBorg/HeliBoard/discussions)
 * Other
-  * [Translations](https://translate.codeberg.org/projects/heliboard/)
+  * [HeliBoard translations](https://translate.codeberg.org/projects/heliboard/) (Weblate)
   * [Dictionaries](https://codeberg.org/Helium314/aosp-dictionaries)
   * [k3lp](https://codeberg.org/k3lp/k3lp) is a WIP library for keyboard layout parsing that will be implemented in HeliBoard when ready (created by [FlorisBoard](https://github.com/florisboard/florisboard/) maintainers)
   * [swipe-o-scope](https://codeberg.org/eclexic/swipe-o-scope) for visualizing gesture data as created when using gesture data gathering
@@ -132,12 +134,12 @@ The original HeliBoard icon is licensed under [Creative Commons BY-SA 4.0](https
 - [Simple Keyboard](https://github.com/rkkr/simple-keyboard)
 - [Indic Keyboard](https://gitlab.com/indicproject/indic-keyboard)
 - [FlorisBoard](https://github.com/florisboard/florisboard/)
-- Our [contributors](https://github.com/HeliBorg/HeliBoard/graphs/contributors)
+- HeliBoard and its [contributors](https://github.com/HeliBorg/HeliBoard/graphs/contributors)
 
 ## Funding
 
-This project is funded through [NGI Mobifree Fund](https://nlnet.nl/mobifree), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission's [Next Generation Internet](https://ngi.eu) program. Learn more at the [NLnet project page](https://nlnet.nl/project/GestureTyping).
+The upstream HeliBoard project is funded through [NGI Mobifree Fund](https://nlnet.nl/mobifree), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission's [Next Generation Internet](https://ngi.eu) program. Learn more at the [NLnet project page](https://nlnet.nl/project/GestureTyping).
 
 [<img src="https://nlnet.nl/logo/banner.png" alt="NLnet foundation logo" width="20%" />](https://nlnet.nl)
 
-Further the project benefits from donations provided by many users (thank you all!).
+HeliBoard further benefits from donations provided by many users. RCBBoard itself does not receive this funding.

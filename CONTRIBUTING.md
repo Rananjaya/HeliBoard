@@ -1,19 +1,102 @@
-# NOTICE
+# Contributing to RCBBoard
 
-**Currently it's not possible to open PRs. This is because I want to deal with existing PRs before migrating to Codeberg (https://github.com/HeliBorg/HeliBoard/issues/378), and this doesn't work for me while new PRs are coming in.**
-Will re-open probably in (late) October or November.
+RCBBoard is my personal keyboard project, based on [HeliBoard](https://github.com/HeliBorg/HeliBoard) (which is based on OpenBoard and the AOSP keyboard). I develop it mainly for myself, friends and family. It is licensed under GPL-3.0, like HeliBoard.
 
-# Getting Started
+Contributions are welcome, but there is no guarantee that a contribution will be accepted or reviewed quickly. If you are planning a larger change, it is a good idea to ask first.
 
-HeliBoard project is based on Gradle and Android Gradle Plugin. To get started, you can install [Android Studio](https://developer.android.com/studio), and import project 'from Version Control / Git / Github' by providing this git repository [URL](https://github.com/HeliBorg/HeliBoard) (or git SSH [URL](git@github.com:Helium314/heliboard.git)).
-Of course you can also use any other compatible IDE, or work with text editor and command line.
-Once everything is up correctly, you're ready to go!
+Problems with the original HeliBoard app belong in [HeliBoard's own tracker](https://github.com/HeliBorg/HeliBoard/issues), not here.
 
-If you have difficulties implementing some functionality, you're welcome to ask for help. No one will write the code for you, but often other contributors can give you very useful hints.
+This document has two parts: **RCBBoard rules** (Part 1) and **technical notes inherited from HeliBoard** (Part 2).
 
-# About the Code
+# Part 1 – RCBBoard rules
 
-HeliBoard is based on AOSP keyboard, and in many places still contains mostly the original code. There are some extensions, and some parts have been replaced completely.
+## Getting started
+
+- Repository: https://github.com/Rananjaya/RCBBoard (pull requests go to the `develop` branch)
+- Java: building needs **JDK 17 or newer**; the JVM unit tests need **JDK 21 or newer** (Robolectric runs Android SDK 36, which needs Java 21). The JDK bundled with Android Studio works for both.
+- Never commit `local.properties`, keystores, passwords or other machine-specific or secret files.
+
+## Principles
+
+1. **Security first.** Treat external input as untrusted, especially imported files (dictionaries, layouts, backups) and the native dictionary code. Check sizes, offsets and lengths before using them.
+2. **Privacy first.** Typed text, clipboard contents, learned words and dictionaries stay on the device. Do not log typed text or personal data.
+3. **Offline only.** RCBBoard has no `INTERNET` permission and no network features. Do not add the permission, network libraries, analytics or crash reporting.
+4. **Keep user data safe.** Changes must not lose learned words, typing history, settings or user dictionaries.
+5. **Keep it simple.** Small, focused changes that use the existing code are easiest to review.
+
+## Code
+
+- Kotlin for new code where practical; otherwise follow the style of the file you are editing. Do not reformat unrelated code.
+- Native code (`app/src/main/jni`): check every buffer access against its real size, avoid integer overflow, and add tests for parser changes.
+- Do not change the package ID, app name, version, signing configuration or permissions without asking first.
+- Keep the existing copyright and SPDX licence headers. New files get `// SPDX-License-Identifier: GPL-3.0-only`.
+- No proprietary code or binary blobs. Code from elsewhere must be GPL-3.0 compatible, and its source must be named.
+
+## Testing
+
+Please test your change and say in the pull request how you tested it:
+
+- **JVM unit tests** (JDK 21+): `./gradlew :app:testDebugUnitTest`
+  Some tests already fail on the unchanged upstream code, and are not caused by RCBBoard: `CharacterIteratorTest` (`lastGraphemeFails`, `firstGraphemeFails`), `XLinkTest` (`layoutsLinks`, `readmeLinks`, `knownDictionaries`; these need network access), `InputLogicTest.insertLetterIntoWordHangulFails` and `StringUtilsTest.detectEmojiAtStartFails`. Your change should not add new failures.
+- **Native tests**, if you changed `app/src/main/jni`: `app/src/main/jni/tests/host/run_host_tests.sh`
+  Needs clang++, GoogleTest (for example `brew install googletest`) and a JDK for `jni.h` (set `JAVA_HOME`). The tests run with AddressSanitizer and UndefinedBehaviorSanitizer and must all pass. Known upstream failures are listed in `app/src/main/jni/tests/host/known_upstream_failures.txt`.
+- **Build**: `./gradlew :app:assembleDebug` (the debug app installs as `com.ranger.myheliboard.debug`, next to the normal app).
+- **Try it** on a device or emulator if your change affects typing, suggestions, layouts or the UI, including English and Sinhala (standard and Wijesekara layouts).
+- **Security fixes** should come with a test that fails before the fix and passes after it.
+
+## Git workflow
+
+- `main` tracks the original HeliBoard upstream. Do not commit RCBBoard work to it.
+- `develop` is the RCBBoard branch. Pull requests target `develop`.
+- Use one branch per topic, for example `feature/…`, `security/…`, `chore/…` or `docs/…`.
+- Changes reach `develop` through pull requests, which I merge.
+- Never push to the original HeliBoard repository.
+- Keep security fixes in their own commits, separate from unrelated changes.
+- Do not rewrite history that has already been pushed.
+
+## Pull requests
+
+Please use the pull request template and describe:
+
+- what changed and why,
+- how you tested it,
+- any security or privacy effects (or "none"),
+- anything that changes existing behaviour or data,
+- screenshots for UI changes.
+
+One topic per pull request, please.
+
+## AI tools
+
+Claude Code, GitHub Copilot and other AI development tools are allowed. You remain responsible for understanding, reviewing and testing what they produce. See [AI_USAGE.md](AI_USAGE.md).
+
+## Translations
+
+RCBBoard has no translation platform of its own. Translations inherited from HeliBoard come in with upstream merges; to improve them, please contribute to [HeliBoard on Weblate](https://translate.codeberg.org/projects/heliboard/). Translations of RCBBoard-specific strings are welcome in pull requests.
+
+## Dictionaries
+
+- Bundled dictionaries need a compatible licence and a documented source, like the Sinhala dictionary in `third_party/sinhala-dictionary/` and the emoji dictionaries in `third_party/emoji-dictionaries/` (see also `licenses/THIRD_PARTY_NOTICES.md`).
+- Other dictionaries can be imported in the app. Community dictionaries are collected in the [aosp-dictionaries repository](https://codeberg.org/Helium314/aosp-dictionaries).
+
+## Licence and attribution
+
+- RCBBoard is licensed under GPL-3.0 ([LICENSE](LICENSE)), and contributions are accepted under the same licence.
+- Keep all existing copyright notices, licence files and attribution, including those of HeliBoard, OpenBoard, AOSP and third-party components (`LICENSE-Apache-2.0`, `LICENSE-CC-BY-SA-4.0`, `licenses/`, `third_party/`).
+- Much of the code was written by the HeliBoard, OpenBoard and AOSP developers. Do not present inherited code as RCBBoard's own work.
+
+## Security problems and conduct
+
+- Do not report security problems publicly. See [SECURITY.md](SECURITY.md).
+- Please be friendly. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+# Part 2 – Technical notes inherited from HeliBoard
+
+These notes come from HeliBoard's contribution guide and still describe the inherited code.
+
+## About the code
+
+RCBBoard, like HeliBoard, is based on the AOSP keyboard, and in many places still contains mostly the original code. There are some extensions, and some parts have been replaced completely.
 When working on this app, you will likely notice its rather large size, and quite different code styles and often ancient comments and _TODO_s, where the latter are typically untouched since AOSP times.
 Unfortunately a lot of the old code is hard to read or to fully understand with all of its intended (and unintended) consequences.
 
@@ -28,75 +111,15 @@ Some hints for finding what you're looking for:
 * Receiving events and information from the app / text field: `LatinIME`
 * Settings are in `SettingsValues`, with some functionality in `Settings` and the default values in `Default`
 
-# Guidelines
+Code that is especially prone to unintended effects, and hard to test (behaviour may depend on the app and OS version): `InputLogic`, `Suggest`, `RichInputConnection`.
 
-Note that the maintainer only has very limited time, and thus review might take a while.
-This especially applies to large PRs (hundreds of lines), which recently started to become more common. Sorry, but there is simply not enough time to review everything.  
-What's more likely to be reviewed soon:
-* Simple changes (but depends on what effect they have, as in some places it's easy to introduce unintended changes)
-* Wanted / accepted changes (labels [_PR_](https://github.com/HeliBorg/HeliBoard/labels/PR), [_contributor needed_](https://github.com/HeliBorg/HeliBoard/issues?q=label%3A%22contributor%20needed%22), [_help wanted_](https://github.com/HeliBorg/HeliBoard/labels/help%20wanted))
-* Changes where the hard work is mostly investigation / research rather than coding
-  * e.g. compiling text lists to dictionaries, customizable icons / key backgrounds, OnePlus disabling keyboard on reboot, ...
-
-What will likely take some time (depends very much on how much other stuff is coming in):
-* Large changes (especially when connected to rather niche functionality)
-* Changes in code that is prone to introducing unintended effects
-  * `InputLogic`, `Suggest`, `RichInputConnection` are especially dangerous here, and also hard to test (behavior may depend on app and possibly OS version)
-
-## Recommended
-
-If you want to contribute, it's a good idea to make sure your idea is actually wanted in HeliBoard.
-Best check related issues before you start working on a PR. If the issue has the [labels](https://github.com/HeliBorg/HeliBoard/labels) [_PR_](https://github.com/HeliBorg/HeliBoard/labels/PR) or [_contributor needed_](https://github.com/HeliBorg/HeliBoard/issues?q=label%3A%22contributor%20needed%22) (even closed ones), contributions are wanted. If you don't find a related issue, it's recommended to open one, but ultimately it's your choice.
-Asking before starting a PR may help you for getting pointers to potentially relevant code, and deciding how to implement your desired changes.
-
-HeliBoard is a complex application and used by users with a large variety of opinions on how things should be.
-When contributing to the app, please:
-* Be careful when modifying core components, as it's easy to trigger unintended consequences
-* When introducing a feature or change that might not be wanted by everyone, make it optional
-* Keep code simple where possible. Complex code is harder to review and to maintain, so the complexity should also add a clear benefit
-* Avoid noticeable performance impact. Some parts of the code are executed very frequently, and the keyboard should stay responsive even on older devices.
-* Try making use of in-place mechanisms instead of re-inventing the wheel. Your contribution should only add as much complexity as necessary, the code is overly complicated already 😶.
-* Keep your changes to few places, as opposed to sprinkling them over many parts of the code. This helps with keeping down complexity during review, and with maintainability of the app.
-* Make a draft PR when you intend to still work on it. Submitting an unfinished PR can be a good idea when you're not sure how to best continue and would like some comments.
-* When you fix a bug without opening an issue, please provide a way to reproduce the bug (see [bug report template](.github/ISSUE_TEMPLATE/bug_report.md))
-* Noticeable adjustments (keyboard UI, default layouts, ...) should either provide a benefit for everyone, or be optional.
-* If your contribution contains code that is not your own, provide a link to the source
-  * This is especially relevant to be sure the code's license is compatible to HeliBoard's GPL3
-  * Note that with LLM generated PRs you might add code with an incompatible license. Better make sure the LLM you're using is trained only with GPL3 compatible code.
-
-Further things to consider (though irrelevant for most PRs):
-* APK size:
-  * Large increases should be discussed first, and will only be added when it's considered worth the increase for a majority of users. It might be possible to avoid size increase by importing optional parts, like it's done for dictionaries.
-  * Small increases like when adding code or layouts are never an issue
-* Do not add proprietary code or binary blobs. If it turns out to be necessary for a feature you want to add, it might be acceptable when the user opts in and imports those parts, like it's done for glide typing.
-* Privacy: Only relevant when adding some form of communication with other apps. Internet permission will not be added.
-
-## Necessary
-
-Some parts of the guidelines are necessary to fulfill for facilitating code review. It doesn't need to be perfect from the start, but consider it for your future PRs when you're reminded of these guidelines. Note that the larger / more complex your PR is, the more relevant these guidelines are.
-Your PR should:
-- **Be only about a single thing**. Mixing unrelated or semi-related contributions into a single PR is hard to review and can get messy. As a general rule: if one part doesn't need the other one(s), it should be separate PRs. If one feature builds on top of another one, but the base is usable on its own, do a PR for the base and then a follow-up once it's merged.
-- **Have a proper description**. A good description helps _a lot_ for understanding what you intend to achieve with the changes, and for understanding the code. This is relevant for separating wanted from unintended changes in behavior during review.
-- **Not contain translations**. Translations should be done using [Weblate](https://translate.codeberg.org/projects/heliboard/). Exception is when you add new resource strings, those can be added right away.
-- **Not be LLM generated**. LLMs enable contributors to quickly generate code that often is bulky and contains parts that are hard to understand. When the you do not understand the code, it's not possible to discuss such parts. See also [AI_USAGE.md](AI_USAGE.md).
-- **Not contain LLM generated discussion / description**. LLMs typically generate verbose and useless descriptions. Please save us some time and write it yourself, otherwise actual discussion is impossible.
-
-Please leave dependency upgrades to the maintainers, unless you state a good reason why they should be done now.
-
-# Adding / Adjusting Layouts
+## Adding / adjusting layouts
 
 See [layouts.md](layouts.md#adding-new-layouts--languages) for how to add new layouts to the app. Please stay in line with other layouts regarding the popup keys.
 
-When editing existing layouts, please consider that people should should still get what they're used to. In case of doubt it might be better to add a new layout instead of overhauling existing layouts.
+When editing existing layouts, please consider that people should still get what they're used to. In case of doubt it might be better to add a new layout instead of overhauling existing layouts.
 `locale_key_texts` files should only contain letters that are actually part of the language, with exception of the optional `more_popups_<...>.txt` files.
 
-# Update Emojis
+## Updating emojis
 
 See make-emoji-keys tool [README](tools/make-emoji-keys/README.md).
-
-# Translations
-Translations can be added using [Weblate](https://translate.codeberg.org/projects/heliboard/). You will need an account to update translations and add languages. Add the language you want to translate to in Languages -> Manage translated languages in the top menu bar.
-Updating translations in a PR will not be accepted, as it may cause conflicts with Weblate translations.
-
-# Dictionaries
-No new dictionaries will be added to this app. Please submit dictionaries and the wordlist to the [dictionaries repository](https://codeberg.org/Helium314/aosp-dictionaries)
