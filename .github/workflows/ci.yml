@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Checks pull requests to develop. Read-only: no secrets, no signing, no releases.
+# Also called by development.yml (workflow_call) to run the same checks on an exact commit.
 # See docs/ci-cd.md.
 name: CI
 
@@ -8,13 +9,26 @@ on:
     branches: [develop]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      commit:
+        description: Exact commit SHA to check out and test
+        type: string
+        required: true
+      skip_debug_build:
+        description: Skip the "Debug build" job (the caller builds the debug APK itself)
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
 
+# A newer push to a pull request cancels its older run. Runs called from Development get their
+# own group (the caller's run id), so they never cancel each other or a pull request run.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   JAVA_VERSION: "21"
@@ -28,10 +42,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.commit }}
           persist-credentials: false
 
-      - name: Test version detection
-        run: python3 .github/scripts/test_next_version.py
+      - name: Test release and stage scripts
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 
   unit-tests:
     name: Unit tests
@@ -40,6 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.commit }}
           persist-credentials: false
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
@@ -82,6 +98,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.commit }}
           persist-credentials: false
 
       - name: Set up JDK ${{ env.JAVA_VERSION }} (for jni.h)
@@ -103,11 +120,15 @@ jobs:
 
   debug-build:
     name: Debug build
+    # true for pull requests (input not set); development.yml skips it because it builds the
+    # same debug APK itself
+    if: ${{ !inputs.skip_debug_build }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.commit }}
           persist-credentials: false
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}

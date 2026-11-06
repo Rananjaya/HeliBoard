@@ -1,15 +1,20 @@
 # SPDX-License-Identifier: GPL-3.0-only
-# Builds, signs and publishes an RCBBoard release (universal APK) after changes reach develop.
-# Only runs in Rananjaya/RCBBoard on the develop branch. Never pushes commits, never
-# force-pushes, never touches main or the HeliBoard upstream repository.
-# See docs/ci-cd.md.
+# Stage 3 - Production: started by hand only (never by a merge), with the exact commit SHA
+# that passed QA. The commit must be on develop, must have a successful QA run, and must not
+# be older than the latest release. Builds, signs and publishes exactly that commit as a
+# universal APK, after approval in the 'release' environment. Only runs in Rananjaya/RCBBoard
+# on develop. Never pushes commits, never force-pushes, never touches main or the HeliBoard
+# upstream repository. See docs/ci-cd.md.
 name: Release
+run-name: Release ${{ inputs.commit }}
 
 on:
-  push:
-    branches: [develop]
   workflow_dispatch:
     inputs:
+      commit:
+        description: "Full 40-character commit SHA that passed QA (copy it from the QA run summary)"
+        required: true
+        type: string
       bump:
         description: "Version bump (auto = from Conventional Commits since the last release)"
         type: choice
@@ -40,7 +45,10 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read # find the QA run for the commit
     outputs:
+      commit: ${{ steps.gate.outputs.sha }}
+      qa_run: ${{ steps.gate.outputs.run_url }}
       release: ${{ steps.publish.outputs.release }}
       version: ${{ steps.next.outputs.version }}
       version_code: ${{ steps.next.outputs.version_code }}
@@ -52,15 +60,27 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      # Also stops with recovery steps if the newest rcbboard-v* tag has no published release
-      # (an earlier run failed after creating its tag); see docs/ci-cd.md.
+      # The exact commit that is released: on develop, with a successful QA run for it.
+      - name: Commit is on develop and passed QA
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_INPUT: ${{ inputs.commit }}
+        run: >-
+          python3 .github/scripts/stage_gate.py release --sha "$COMMIT_INPUT"
+          --repo "$GITHUB_REPOSITORY" --github-output "$GITHUB_OUTPUT"
+
+      # Versions exactly that commit (not the tip of develop). Also stops if the commit is older
+      # than the latest release, or with recovery steps if the newest rcbboard-v* tag has no
+      # published release (an earlier run failed after creating its tag); see docs/ci-cd.md.
       - name: Work out the next version
         id: next
         env:
           BUMP: ${{ inputs.bump || 'auto' }}
           GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ steps.gate.outputs.sha }}
         run: >-
-          python3 .github/scripts/next_version.py --bump "$BUMP"
+          python3 .github/scripts/next_version.py --head "$COMMIT" --bump "$BUMP"
           --repo "$GITHUB_REPOSITORY" --github-output "$GITHUB_OUTPUT"
 
       - name: Decide whether to publish
@@ -88,18 +108,24 @@ jobs:
     if: needs.version.outputs.release == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    environment: release
+    environment: release # signing secrets; add yourself as required reviewer to approve each release
     permissions:
       contents: write # create the tag and the GitHub Release
     env:
+      COMMIT: ${{ needs.version.outputs.commit }}
+      QA_RUN: ${{ needs.version.outputs.qa_run }}
       VERSION: ${{ needs.version.outputs.version }}
       VERSION_CODE: ${{ needs.version.outputs.version_code }}
       TAG: ${{ needs.version.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.version.outputs.commit }}
           persist-credentials: false
+
+      - name: Confirm the checked-out commit
+        run: |
+          [ "$(git rev-parse HEAD)" = "$COMMIT" ] || { echo "::error::checked out $(git rev-parse HEAD), expected $COMMIT"; exit 1; }
 
       - name: Check signing secrets
         env:
@@ -184,13 +210,14 @@ jobs:
       - name: Write release notes
         run: |
           set -euo pipefail
-          short_sha="${GITHUB_SHA:0:10}"
+          short_sha="${COMMIT:0:10}"
           build_date="$(date -u '+%Y-%m-%d %H:%M UTC')"
           cat > "$RUNNER_TEMP/release-notes.md" <<EOF
           | | |
           | --- | --- |
           | **Version** | $VERSION (versionCode $VERSION_CODE) |
-          | **Commit** | [\`$short_sha\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA) on \`develop\` |
+          | **Commit** | [\`$short_sha\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$COMMIT) on \`develop\` |
+          | **QA** | [QA run]($QA_RUN) for this commit |
           | **Build date** | $build_date |
           | **APK** | \`RCBBoard-$VERSION.apk\` (universal: arm64-v8a, armeabi-v7a, x86, x86_64) |
 
@@ -215,15 +242,15 @@ jobs:
           if existing=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" 2>/dev/null); then
             type=$(jq -r .object.type <<< "$existing"); sha=$(jq -r .object.sha <<< "$existing")
             [ "$type" = tag ] && sha=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$sha" --jq .object.sha)
-            if [ "$sha" != "$GITHUB_SHA" ]; then
-              echo "::error title=Tag exists::$TAG already points to $sha, not $GITHUB_SHA. Not overwriting it."
+            if [ "$sha" != "$COMMIT" ]; then
+              echo "::error title=Tag exists::$TAG already points to $sha, not $COMMIT. Not overwriting it."
               exit 1
             fi
             echo "Tag $TAG already points to this commit."
           else
             gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
-              -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" > /dev/null
-            echo "Created tag $TAG at $GITHUB_SHA."
+              -f ref="refs/tags/$TAG" -f sha="$COMMIT" > /dev/null
+            echo "Created tag $TAG at $COMMIT."
           fi
 
       # Only marked as the latest release if no newer rcbboard-v* release is published, so

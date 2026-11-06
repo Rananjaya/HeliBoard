@@ -24,6 +24,8 @@ Used by .github/workflows/release.yml; see docs/ci-cd.md. Rules:
 * With --repo, the previous release tag must have a published GitHub Release. If it
   has none, an earlier release run did not finish and the script stops with recovery
   steps instead of building on top of it (see docs/ci-cd.md, "Recovering a failed release").
+  With --repo, HEAD must also contain the newest published rcbboard-v* release: releasing a
+  commit that is older than the latest release is refused.
 
 Prints a summary and, with --github-output, writes these keys for GitHub Actions:
 release (true/false), status (new/existing-tag/no-release), version, version_code,
@@ -116,6 +118,29 @@ def orphan_tag_message(tag: str, sha: str) -> str:
             f"and choose 'Re-run all jobs'. If that build must not be published: delete any draft "
             f"release for {tag}, delete the tag (git push origin --delete {tag}) and re-run this run. "
             f"See docs/ci-cd.md, 'Recovering a failed release'.")
+
+
+def check_not_older_than_latest_release(head: str, published_tags: list[str]) -> None:
+    """Refuses to release a commit that the newest published rcbboard-v* release already contains,
+    or that is not based on it (releasing must never go back to older code)."""
+    own = [(v, name) for name, v in ((n, parse_tag(n)) for n in published_tags) if v is not None]
+    if not own:
+        return
+    _, latest_tag = max(own)
+    try:
+        latest_commit = git("rev-parse", f"{latest_tag}^{{commit}}").strip()
+    except VersionError:
+        raise VersionError(f"the published release {latest_tag} has no tag in this clone; "
+                           "the checkout needs fetch-tags: true")
+    head_sha = git("rev-parse", "--verify", f"{head}^{{commit}}").strip()
+    if head_sha == latest_commit:
+        return  # the same commit: reported as already released by the release workflow
+    if is_ancestor(head_sha, latest_commit):
+        raise VersionError(f"commit {head_sha[:10]} is older than the latest release {latest_tag} "
+                           f"({latest_commit[:10]}); releasing older code is not allowed")
+    if not is_ancestor(latest_commit, head_sha):
+        raise VersionError(f"commit {head_sha[:10]} does not contain the latest release {latest_tag} "
+                           f"({latest_commit[:10]}); only newer commits on develop can be released")
 
 
 def git(*args: str) -> str:
@@ -270,7 +295,10 @@ def main() -> int:
                 raise VersionError("--is-latest needs --repo")
             print(str(is_newest(args.is_latest, published_release_tags(args.repo))).lower())
             return 0
-        checker = (lambda tag: published_release_exists(args.repo, tag)) if args.repo else None
+        checker = None
+        if args.repo:
+            check_not_older_than_latest_release(args.head, published_release_tags(args.repo))
+            checker = lambda tag: published_release_exists(args.repo, tag)  # noqa: E731
         result = determine(args.head, args.bump, release_exists=checker)
     except VersionError as error:
         print(f"::error title=Version::{error}")
