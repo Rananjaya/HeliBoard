@@ -77,7 +77,6 @@ fun AboutScreen(
         SettingsWithoutKey.APP,
         SettingsWithoutKey.VERSION,
         SettingsWithoutKey.DEVELOPER,
-        SettingsWithoutKey.ORIGINAL_PROJECT,
         SettingsWithoutKey.THIRD_PARTY,
         SettingsWithoutKey.LICENSE,
         SettingsWithoutKey.HIDDEN_FEATURES,
@@ -122,20 +121,6 @@ fun createAboutSettings(context: Context) = listOf(
     },
     Setting(context, SettingsWithoutKey.DEVELOPER, R.string.about_developer, R.string.about_developer_name) {
         DeveloperCredit(title = it.title)
-    },
-    Setting(context, SettingsWithoutKey.ORIGINAL_PROJECT, R.string.about_original_project, R.string.about_original_project_description) {
-        val ctx = LocalContext.current
-        Preference(
-            name = it.title,
-            description = it.description,
-            onClick = {
-                val intent = Intent()
-                intent.data = Links.GITHUB.toUri()
-                intent.action = Intent.ACTION_VIEW
-                ctx.startActivity(intent)
-            },
-            icon = R.drawable.ic_settings_about
-        )
     },
     Setting(context, SettingsWithoutKey.THIRD_PARTY, R.string.about_third_party, R.string.about_third_party_description) {
         Preference(
@@ -277,8 +262,8 @@ private fun DeveloperCredit(title: String) {
             .clickable {
                 ctx.startActivity(Intent(Intent.ACTION_VIEW, Links.DEVELOPER.toUri()))
             }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (portrait != null) {
