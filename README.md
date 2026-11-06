@@ -1,135 +1,130 @@
+<div align="center">
+
+<img src="docs/images/rcbboard-icon.png" width="112" alt="RCBBoard app icon">
+
 # RCBBoard
+
+**A private, offline keyboard for Android, for English and Sinhala.**
+
+[![Source version 4.3-beta1](https://img.shields.io/badge/source%20version-4.3--beta1-informational)](#download-and-install)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![Android 5.0+](https://img.shields.io/badge/Android-5.0%2B-3DDC84)](#download-and-install)
+[![No internet permission](https://img.shields.io/badge/internet%20permission-none-brightgreen)](#privacy-and-security)
+
+[Download](#download-and-install) · [Features](#features) · [English and Sinhala](#english-and-sinhala) · [Privacy](#privacy-and-security) · [Contributing](#contributing)
+
+</div>
+
+---
 
 RCBBoard is an independent fork of [HeliBoard](https://github.com/HeliBorg/HeliBoard) by Helium314. It is not an official HeliBoard release and is not endorsed by the original maintainers.
 
 RCBBoard is a personal project by [Rananjaya](https://github.com/Rananjaya), made mainly for my own use and to share with friends and family. Most of the code comes from HeliBoard and the projects it is based on (see [Credits](#credits)); RCBBoard adds its own changes, such as a bundled Sinhala dictionary and the Sinhala (Wijesekara) layout.
 
-RCBBoard is a privacy-conscious and customizable open-source keyboard. HeliBoard is based on AOSP / OpenBoard. RCBBoard does not use the internet permission, and thus is 100% offline.
+## Screenshots
 
-Source code: https://github.com/Rananjaya/RCBBoard/tree/develop
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/screenshots/english-suggestions.png" width="250" alt="English typing with word suggestions"><br><sub>English suggestions</sub></td>
+    <td align="center"><img src="docs/images/screenshots/sinhala-wijesekara.png" width="250" alt="Sinhala Wijesekara layout with Sinhala suggestions"><br><sub>Sinhala · Wijesekara</sub></td>
+    <td align="center"><img src="docs/images/screenshots/emoji-suggestions.png" width="250" alt="Emoji suggestion for the word pizza"><br><sub>Emoji suggestions</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/screenshots/next-word-dark.png" width="250" alt="Next-word predictions in the dark theme"><br><sub>Next-word predictions</sub></td>
+    <td align="center"><img src="docs/images/screenshots/sinhala-dark.png" width="250" alt="Sinhala sentence typed in the dark theme"><br><sub>Sinhala · dark theme</sub></td>
+    <td align="center"><img src="docs/images/screenshots/symbols-toolbar.png" width="250" alt="Symbols layout with the editing toolbar"><br><sub>Symbols and toolbar</sub></td>
+  </tr>
+</table>
 
-The F-Droid, GitHub release, and IzzyOnDroid listings for HeliBoard install the original project, package `helium314.keyboard`. They do not install RCBBoard.
+## Features
 
-## Table of Contents
+- **Suggestions and spell check** from dictionaries, with next-word predictions that learn from what you type.
+- **Emoji search and suggestions**, inline and in a separate search, using the bundled emoji dictionaries.
+- **Themes**: styles, colours and a background image; follows the system day/night setting on Android 10+ (and some versions of Android 9) and dynamic colours on Android 12+.
+- **Custom layouts**: edit the main keyboard [layouts](layouts.md) (when *use system languages* is turned off) and special layouts such as symbols, numbers and the functional keys.
+- **Clipboard history**, one-handed mode, split keyboard and a number pad.
+- **Backup and restore** of settings and learned words / history.
+- **More dictionaries** can be added: build your own, or get them from the [dictionaries repository](https://codeberg.org/Helium314/aosp-dictionaries#dictionaries) (quality may vary).
+- **Glide typing** needs a closed-source library that is **not included in RCBBoard**, because no compatible open-source library exists. Without it, glide typing is unavailable. If you want it, you have to add the library yourself: it can be extracted from GApps packages ("*swypelibs*"), or downloaded [here](https://github.com/erkserkserks/openboard/tree/46fdf2b550035ca69299ce312fa158e7ade36967/app/src/main/jniLibs) (click on the file and then "raw" or the download button).
 
-- [Features](#features)
-- [Contributing](#contributing-)
-   * [Reporting Issues](#reporting-issues)
-   * [Translations](#translations)
-   * [To Community](#to-community)
-   * [Code Contribution](CONTRIBUTING.md)
-- [Links](#links)
-- [License](#license)
-- [Credits](#credits)
-  * [Funding](#funding)
+The [HeliBoard wiki](https://github.com/HeliBorg/HeliBoard/wiki) explains these features in detail, including the [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ) and [hidden features](https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features).
 
-# Features
-<ul>
-  <li>Add dictionaries for suggestions and spell check</li>
-  <ul>
-    <li>build your own, or get them  <a href="https://codeberg.org/Helium314/aosp-dictionaries#dictionaries">here</a> (quality may vary)</li>
-    <li>additional dictionaries for emojis or scientific symbols can be used to provide suggestions (similar to "emoji search")</li>
-    <li>note that for Korean layouts, suggestions only work using <a href="https://github.com/openboard-team/openboard/commit/83fca9533c03b9fecc009fc632577226bbd6301f">this dictionary</a>, the tools in the dictionary repository are not able to create working dictionaries</li>
-  </ul>
-  <li>Customize keyboard themes (style, colors and background image)</li>
-  <li>Emoji search (inline and separate, requires <a href="https://codeberg.org/Helium314/aosp-dictionaries">emoji dictionary</a>)</li>
-  <ul>
-    <li>can follow the system's day/night setting on Android 10+ (and on some versions of Android 9)</li>
-    <li>can follow dynamic colors for Android 12+</li>
-  </ul>
-  <li>Customize keyboard <a href="https://github.com/HeliBorg/HeliBoard/blob/main/layouts.md">layouts</a> (only available when disabling <i>use system languages</i>)</li>
-  <li>Customize special layouts, like symbols, number,  or functional key layout</li>
-  <li>Multilingual typing</li>
-  <li>Glide typing (<i>only with closed source library</i> ☹️)</li>
-  <ul>
-    <li>library not included in the app, as there is no compatible open source library available</li>
-    <li>can be extracted from GApps packages ("<i>swypelibs</i>"), or downloaded <a href="https://github.com/erkserkserks/openboard/tree/46fdf2b550035ca69299ce312fa158e7ade36967/app/src/main/jniLibs">here</a> (click on the file and then "raw" or the tiny download button)</li>
-  </ul>
-  <li>Clipboard history</li>
-  <li>One-handed mode</li>
-  <li>Split keyboard</li>
-  <li>Number pad</li>
-  <li>Backup and restore your settings and learned word / history data</li>
-</ul>
+## English and Sinhala
 
-For [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ), [hidden features](https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features) and more information about the app and features, please visit the [wiki](https://github.com/HeliBorg/HeliBoard/wiki)
+RCBBoard is set up for two languages: **English (US)** and **Sinhala**. You can switch between them with the globe key.
 
-# Contributing ❤
+| Layout | What you get |
+| --- | --- |
+| **English (US)** – QWERTY | Suggestions, autocorrection, next-word predictions and emoji suggestions. |
+| **Sinhala** | Sinhala word suggestions from the bundled Sinhala dictionary, and Sinhala emoji suggestions. |
+| **Sinhala (Wijesekara)** | The standard Wijesekara typewriter arrangement, with the same Sinhala suggestions. |
 
-## Reporting Issues
+**Typing in Wijesekara.** Type in Unicode order: the consonant first, then the vowel sign. For example, ක then ා gives කා, and ක then ෙ gives කෙ. Characters that a PC keyboard reaches with AltGr (such as independent vowels and two-part vowel signs) are on long-press. See the [Wijesekara layout notes](docs/sinhala-wijesekara-layout.md) for the full key map and sources.
 
-RCBBoard is developed at https://github.com/Rananjaya/RCBBoard. It is a personal project, so there is no guarantee that a report will be answered or a problem fixed. Problems with the original HeliBoard app belong in [its own tracker](https://github.com/HeliBorg/HeliBoard/issues).
+The Sinhala dictionary and the emoji dictionaries are bundled with their sources and licences documented in [`third_party/`](third_party/) and [`licenses/`](licenses/).
 
-Before opening a new issue, be sure to check the following:
- - **Does the issue already exist?** Search the open and closed issues of RCBBoard first. In case of feature requests you could also check HeliBoard's [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ) and [hidden features](https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features), which also apply to RCBBoard.
- - **Is the issue still relevant?** Make sure your issue is not already fixed in the latest RCBBoard build.
- - **Is it a single topic?** If you want to suggest multiple things, open multiple issues.
- - **Did you use the issue template?** It helps to have all the information needed to understand and fix the problem.
- - **Are you responsible for what you wrote?** AI tools may help you write or translate an issue, but you are responsible for its content. See [AI_USAGE.md](AI_USAGE.md).
- - **Is it a security vulnerability?** Do not open a public issue. Follow [SECURITY.md](SECURITY.md) instead.
-Issues that ignore the issue template are hard to read and understand (e.g. huge screenshots, no proper description, or several topics in one issue) and may get closed.
+## Privacy and security
 
-If you're interested, you can read the following useful text about effective bug reporting (a bit longer read): https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
+- **No internet permission.** RCBBoard does not have Android's `INTERNET` permission, so it cannot directly transmit what you type over a network.
+- **Your data stays on your device.** Learned words, clipboard history, dictionaries and settings are stored locally. They leave the device only in a backup you export yourself, or in Android's own device backup if you have that turned on.
+- **Few permissions.** Besides vibration, the system user dictionary and being notified when the device starts, RCBBoard only asks for contacts access if you turn on contact-name suggestions.
+- **Hardened v2 dictionary reader.** The native code that reads dictionary files in the v2 format (the format of the bundled dictionaries and of dictionary files you import) checks every read against the real file size. It is covered by regression tests run with AddressSanitizer and UndefinedBehaviorSanitizer.
+- **Still under review: v4 user-history dictionaries.** The learned-words dictionary that RCBBoard writes on your device uses the separate v4 format. Its native code is still being audited and has not received the same hardening, so RCBBoard does not claim that every native dictionary format is fully protected.
+- **Found a security problem?** Please report it privately, as described in [SECURITY.md](SECURITY.md).
 
-## Translations
-RCBBoard does not run its own translation platform.
-* Translations inherited from HeliBoard arrive with upstream merges. To improve them, please contribute to [HeliBoard on Weblate](https://translate.codeberg.org/projects/heliboard/), so that both projects benefit and upstream merges do not conflict.
-* Pull requests translating RCBBoard-specific strings are welcome. Please do not change inherited translations in RCBBoard pull requests.
+## Download and install
 
-## To Community
-RCBBoard does not have its own community forum. Questions about RCBBoard belong in the [RCBBoard repository](https://github.com/Rananjaya/RCBBoard).
+1. Download an APK from the [Releases page](https://github.com/Rananjaya/RCBBoard/releases).
+2. Install it, then enable **RCBBoard** in Android's keyboard settings (usually *Settings → System → Keyboard → On-screen keyboard*) and select it as your keyboard.
 
-The HeliBoard community shares themes, layouts and dictionaries that usually work in RCBBoard too, in [HeliBoard's GitHub discussions](https://github.com/HeliBorg/HeliBoard/discussions) and on [Lemmy](https://lemmy.world/c/Heliboard). Please do not ask HeliBoard's community for help with RCBBoard-specific problems.
-You can share your themes, layouts and dictionaries with other people:
-* Themes can be saved and loaded using the menu on top-right in the _adjust colors_ screen
-  * you can share custom colors in a separate [discussion section](https://github.com/HeliBorg/HeliBoard/discussions/categories/custom-colors)
-  * there are theme collections available at [Star-Trowa/heliboard-themes](https://github.com/Star-Trowa/heliboard-themes) and [PickleHik3/droid-tings](https://github.com/PickleHik3/droid-tings)
-* Custom keyboard layouts are text files whose content you can edit, copy and share
-  * this applies to main keyboard layouts and to special layouts adjustable in advanced settings
-  * see [layouts.md](layouts.md) for details
-  * you can share custom layouts in a separate [discussion section](https://github.com/HeliBorg/HeliBoard/discussions/categories/custom-layout)
-  * [Roccobot's Layout Maker](https://roccobot.github.io/HeliBoard-RLM/) is a browser-based editor for json layout files
-* Creating dictionaries is a little more work
-  * first you will need a wordlist in the format from [here](https://codeberg.org/Helium314/aosp-dictionaries/src/branch/main/wordlists/sample.combined) and in the repository readme
-    * you can load the wordlist dictionary directly in HeliBoard like you would load a dictionary, but other AOSP keyboard forks will likely need the .dict file
-  * then you need to compile the dictionary using [external tools](https://github.com/remi0s/aosp-dictionary-tools)
-    * when you want to add the dictionary to the [repository](https://codeberg.org/Helium314/aosp-dictionaries/), no need to compile to a .dict file
-  * the resulting file (and ideally the wordlist too) can be shared with other users
-  * note that there will not be any further dictionaries added to this app, but you can add dictionaries to the [dictionaries repository](https://codeberg.org/Helium314/aosp-dictionaries)
+RCBBoard needs Android 5.0 or newer. Release APKs are signed with this certificate; you can check it with `apksigner verify --print-certs` ("certificate SHA-256 digest"):
 
-## Code Contribution
-See [Contribution Guidelines](CONTRIBUTING.md), [AI_USAGE.md](AI_USAGE.md), the [Code of Conduct](CODE_OF_CONDUCT.md) and the [Security Policy](SECURITY.md).
+```
+0b01373116d4a7b57646c4c7e2ffc28af91870bdbeabb4b8c05c00f313e2291b
+```
 
-Pull requests go to `Rananjaya/RCBBoard`, branch `develop`, never to HeliBoard. GitHub may preselect `HeliBorg/HeliBoard` and `main` because RCBBoard is a fork, so please check the base before creating a pull request (see [Where pull requests go](CONTRIBUTING.md#where-pull-requests-go)).
+> [!IMPORTANT]
+> The APK currently on the Releases page (`v4.3-beta1`) was built before the v2 dictionary security fixes described in [Privacy and security](#privacy-and-security). A release that includes them has not been published yet; until then, you can build RCBBoard from source.
 
-# Links
-* Info
-  * [Wiki](https://github.com/HeliBorg/HeliBoard/wiki), including FAQ, help on customizing layouts, and gesture data gathering
-  * [Layout documentation](layouts.md) (more technical info regarding layout customization)
-  * [For creating custom dictionaries](https://codeberg.org/Helium314/aosp-dictionaries#wordlist-information) (see also top of the linked readme)
-* HeliBoard community (upstream project)
-  * [Lemmy](https://lemmy.world/c/Heliboard)
-  * [Reddit](https://www.reddit.com/r/HeliBoard)
-  * GitHub [discussions](https://github.com/HeliBorg/HeliBoard/discussions)
-* Other
-  * [HeliBoard translations](https://translate.codeberg.org/projects/heliboard/) (Weblate)
-  * [Dictionaries](https://codeberg.org/Helium314/aosp-dictionaries)
-  * [k3lp](https://codeberg.org/k3lp/k3lp) is a WIP library for keyboard layout parsing that will be implemented in HeliBoard when ready (created by [FlorisBoard](https://github.com/florisboard/florisboard/) maintainers)
-  * [swipe-o-scope](https://codeberg.org/eclexic/swipe-o-scope) for visualizing gesture data as created when using gesture data gathering
+> [!NOTE]
+> The F-Droid, GitHub release and IzzyOnDroid listings for HeliBoard install the original project, package `helium314.keyboard`. They do not install RCBBoard (`com.ranger.myheliboard`).
 
-# License
+**Build from source:** `./gradlew assembleRelease` builds an unsigned release APK (JDK 17 or newer; see [CONTRIBUTING.md](CONTRIBUTING.md#getting-started)). Source code: https://github.com/Rananjaya/RCBBoard/tree/develop
+
+## Customisation resources
+
+Themes, layouts and dictionaries made for HeliBoard usually work in RCBBoard too. The resources below belong to the **upstream HeliBoard community** and other independent projects. They are **not RCBBoard support channels**; please report RCBBoard problems in this repository instead (see [Contributing](#contributing)).
+
+- **Themes** can be saved and loaded from the menu in the *adjust colours* screen. Collections: [Star-Trowa/heliboard-themes](https://github.com/Star-Trowa/heliboard-themes) and [PickleHik3/droid-tings](https://github.com/PickleHik3/droid-tings); custom colours are shared in [HeliBoard's discussions](https://github.com/HeliBorg/HeliBoard/discussions/categories/custom-colors).
+- **Layouts** are text files you can edit, copy and share (see [layouts.md](layouts.md)). Custom layouts are shared in [HeliBoard's discussions](https://github.com/HeliBorg/HeliBoard/discussions/categories/custom-layout).
+- **Dictionaries** are built from a wordlist in [this format](https://codeberg.org/Helium314/aosp-dictionaries/src/branch/main/wordlists/sample.combined) (see [wordlist information](https://codeberg.org/Helium314/aosp-dictionaries#wordlist-information)), compiled with [external tools](https://github.com/remi0s/aosp-dictionary-tools), and can be shared or added to the [dictionaries repository](https://codeberg.org/Helium314/aosp-dictionaries/). A wordlist can also be loaded directly in the app.
+- **HeliBoard community:** [GitHub discussions](https://github.com/HeliBorg/HeliBoard/discussions), [Lemmy](https://lemmy.world/c/Heliboard) and [Reddit](https://www.reddit.com/r/HeliBoard), where these resources are shared.
+
+Other related projects: [k3lp](https://codeberg.org/k3lp/k3lp), a WIP library for keyboard layout parsing (created by [FlorisBoard](https://github.com/florisboard/florisboard/) maintainers), and [swipe-o-scope](https://codeberg.org/eclexic/swipe-o-scope) for visualising gesture data.
+
+## Contributing
+
+RCBBoard is a personal project: contributions are welcome, but there is no guarantee that a report will be answered or a pull request accepted.
+
+- **Problems and ideas:** use the RCBBoard repository and its issue templates. Search existing issues first, keep one topic per issue, and see this [guide to effective bug reporting](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html). Problems with the original HeliBoard app belong in [its own tracker](https://github.com/HeliBorg/HeliBoard/issues).
+- **Security problems:** never in public issues; see [SECURITY.md](SECURITY.md).
+- **Code:** see [CONTRIBUTING.md](CONTRIBUTING.md), [AI_USAGE.md](AI_USAGE.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Pull requests go to `Rananjaya/RCBBoard`, branch `develop`, never to HeliBoard. GitHub may preselect `HeliBorg/HeliBoard` and `main` because RCBBoard is a fork, so please check the base before creating a pull request (see [Where pull requests go](CONTRIBUTING.md#where-pull-requests-go)).
+- **Translations:** inherited translations come from HeliBoard, so please improve them on [HeliBoard's Weblate](https://translate.codeberg.org/projects/heliboard/). Translations of RCBBoard-specific strings are welcome in pull requests.
+
+## License
 
 RCBBoard is licensed under GNU General Public License v3.0. It is a fork of HeliBoard, which is a fork of OpenBoard.
 
  > Permissions of this strong copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights.
 
-See repo's [LICENSE](/LICENSE) file.
+See repo's [LICENSE](LICENSE) file.
 
 Since the app is based on Apache 2.0 licensed AOSP Keyboard, an [Apache 2.0](LICENSE-Apache-2.0) license file is provided.
 The original HeliBoard icon is licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). A [license file](LICENSE-CC-BY-SA-4.0) is also included. RCBBoard uses its own launcher icon.
 
-# Credits
-- Icon by [Fabian OvrWrt](https://github.com/FabianOvrWrt) with contributions from [The Eclectic Dyslexic](https://github.com/the-eclectic-dyslexic)
+## Credits
+
+- Original HeliBoard icon by [Fabian OvrWrt](https://github.com/FabianOvrWrt) with contributions from The Eclectic Dyslexic
 - [OpenBoard](https://github.com/openboard-team/openboard)
 - [AOSP Keyboard](https://android.googlesource.com/platform/packages/inputmethods/LatinIME/)
 - [LineageOS](https://review.lineageos.org/admin/repos/LineageOS/android_packages_inputmethods_LatinIME)
@@ -137,11 +132,3 @@ The original HeliBoard icon is licensed under [Creative Commons BY-SA 4.0](https
 - [Indic Keyboard](https://gitlab.com/indicproject/indic-keyboard)
 - [FlorisBoard](https://github.com/florisboard/florisboard/)
 - HeliBoard and its [contributors](https://github.com/HeliBorg/HeliBoard/graphs/contributors)
-
-## Funding
-
-The upstream HeliBoard project is funded through [NGI Mobifree Fund](https://nlnet.nl/mobifree), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission's [Next Generation Internet](https://ngi.eu) program. Learn more at the [NLnet project page](https://nlnet.nl/project/GestureTyping).
-
-[<img src="https://nlnet.nl/logo/banner.png" alt="NLnet foundation logo" width="20%" />](https://nlnet.nl)
-
-HeliBoard further benefits from donations provided by many users. RCBBoard itself does not receive this funding.
