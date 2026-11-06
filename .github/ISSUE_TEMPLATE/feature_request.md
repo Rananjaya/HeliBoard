@@ -4,13 +4,13 @@ about: Suggest an idea for this project
 labels: enhancement
 ---
 
-Please see the appropriate readme section for issue reporting guidelines: https://github.com/HeliBorg/HeliBoard?tab=readme-ov-file#reporting-issues
+Please see the appropriate readme section for issue reporting guidelines: https://github.com/Rananjaya/RCBBoard?tab=readme-ov-file#reporting-issues
 tl;dr:
 * search for duplicates, also in closed issues
 * check FAQ / hidden features
 * a single issue per topic
 * ONLY add screenshots when necessary, and reduce their size
-* write it yourself
+* you are responsible for what you write (AI help is fine, see AI_USAGE.md)
 
 <!--
 issue template below, please remove above text before submitting (and the template too if you think it's a good idea)
@@ -29,5 +29,8 @@ Provide a clear and concise description of *your use case* and what you thus thi
 
 **Describe alternatives you've considered (if any)**
 
-**App version**
-Please provide the explicit version, you're using.
+**Offline and privacy**
+RCBBoard is offline-first and has no internet permission. If your idea would need network access, new permissions or access to personal data, please explain why.
+
+**RCBBoard version**
+Please provide the explicit version you're using.

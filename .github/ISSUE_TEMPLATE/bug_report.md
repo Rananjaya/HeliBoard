@@ -4,12 +4,13 @@ about: Create a report to help us improve
 labels: bug
 ---
 
-Please see the appropriate readme section for issue reporting guidelines: https://github.com/HeliBorg/HeliBoard?tab=readme-ov-file#reporting-issues
+Please see the appropriate readme section for issue reporting guidelines: https://github.com/Rananjaya/RCBBoard?tab=readme-ov-file#reporting-issues
 tl;dr:
 * search for duplicates, also in closed issues
 * a single issue per topic
 * reduce screenshot size
-* write it yourself
+* you are responsible for what you write (AI help is fine, see AI_USAGE.md)
+* security vulnerabilities must not be reported here, see SECURITY.md
 
 <!--
 issue template below, please remove above text before submitting (and the template too if you think it's a good idea)
@@ -29,8 +30,14 @@ If it's not obvious (e.g. not crash), describe how you think the app should beha
 ONLY add screenshots when they add real value.
 If you add screenshots, reduce the size or use thumbnails to keep the issue nicely readable.
 
-**App version**
-Please provide the explicit version (not just "latest"), or if you build the app yourself specify the latest commit.
+**RCBBoard version**
+Please provide the explicit version (not just "latest"), or if you build the app yourself specify the commit.
+
+**Language and layout**
+Which keyboard languages and layouts are enabled (e.g. English (US) QWERTY, Sinhala, Sinhala (Wijesekara)).
+
+**Does it also happen in HeliBoard?**
+If you know, say whether the original HeliBoard app has the same problem. Problems that also occur in HeliBoard may need to be reported to HeliBoard too.
 
 **Device:**
  - Model: [e.g. Samsung Galaxy S9]

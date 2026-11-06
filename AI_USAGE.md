@@ -1,14 +1,12 @@
-# AI / LLM Usage
+# AI-assisted development
 
-AI / LLM usage for code and communication is not completely prohibited, but please don't.
-There are 2 main reasons:
-* **Time**: Generating large volumes of content with LLMs is simple, but reading and trying to understand it takes time.
-Generated text usually is needlessly verbose, and no one can tell which parts you actually care about and what was generated in addition.
-* **Respect**: When someone volunteers to work on your request, they want to deal with an actual human who reacts to feedback.
+AI development tools such as Claude Code, GitHub Copilot and similar tools are allowed in RCBBoard. (This replaces the AI policy inherited from HeliBoard, which discouraged AI use.)
 
-Effectively LLMs increase the maintainer workload when there already is too much to do, and it's no fun at all to deal with. _No fun_ may sound irrelevant, but in fact can be very destructive for a hobby project such as HeliBoard.
+If you use them:
 
-1. Communication must happen between humans. You may use AI for translations or similar, but not for generating comments.
-2. Contributions must be made with human interaction, i.e. AI generated PRs and issues are prohibited.
-3. Understand your contributions. AI assistance is acceptable and must be disclosed, but you still should be able to understand and explain the code yourself.
-4. Your contributions need to be compatible with the [project's license](LICENSE). This effectively means an LLM can only be trained on code compatible with GPL3.
+1. **You are responsible for your changes**, whether you wrote them or an AI tool did.
+2. **Understand, review and test** AI-generated code before submitting it, like any other code (see [CONTRIBUTING.md](CONTRIBUTING.md#testing)).
+3. **Never give secrets or private data to AI tools**: no API keys, passwords, signing keys or keystores, `local.properties`, personal data, or user data such as dictionaries, typing history or clipboard contents.
+4. **Be extra careful with security-sensitive code** (native code, file import, backup and restore, clipboard, permissions, anything that parses external data): review it closely and add tests.
+5. **Keep it offline and GPL-3.0 compatible**: AI-generated code must not add network access, the `INTERNET` permission, analytics or new permissions, and must not copy code under an incompatible licence.
+6. It is nice to mention in a pull request when you used AI tools substantially.
