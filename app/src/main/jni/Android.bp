@@ -191,6 +191,8 @@ cc_test {
     srcs: [
         "tests/defines_test.cpp",
         "tests/dictionary/header/header_read_write_utils_test.cpp",
+        "tests/dictionary/structure/pt_common/patricia_trie_reading_utils_test.cpp",
+        "tests/dictionary/structure/v2/patricia_trie_policy_test.cpp",
         "tests/dictionary/structure/v4/content/language_model_dict_content_test.cpp",
         "tests/dictionary/structure/v4/content/language_model_dict_content_global_counters_test.cpp",
         "tests/dictionary/structure/v4/content/probability_entry_test.cpp",

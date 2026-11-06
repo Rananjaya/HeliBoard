@@ -256,6 +256,10 @@ const int SuggestionsOutputUtils::MIN_LEN_FOR_MULTI_WORD_AUTOCORRECT = 16;
         int shortcutTargetStringLength;
         shortcutIt->nextShortcutTarget(MAX_WORD_LENGTH, shortcutTarget,
                 &shortcutTargetStringLength, &isWhilelist);
+        if (shortcutTargetStringLength <= 0) {
+            // Empty or malformed shortcut target.
+            continue;
+        }
         int shortcutScore;
         int kind;
         if (isWhilelist && sameAsTyped) {

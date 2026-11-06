@@ -20,6 +20,8 @@
 #include <cstdint>
 
 #include "defines.h"
+#include "dictionary/utils/byte_array_utils.h"
+#include "utils/byte_array_view.h"
 
 namespace latinime {
 
@@ -30,26 +32,78 @@ class PatriciaTrieReadingUtils {
  public:
     typedef uint8_t NodeFlags;
 
+    // Each reading method has two forms. The ReadOnlyByteArrayView form (read-only v2 dictionaries)
+    // never reads outside the buffer, see "Bounded reading" in ByteArrayUtils. The raw pointer form
+    // is used by the v4 dictionaries, which check their buffers themselves.
     static int getPtNodeArraySizeAndAdvancePosition(const uint8_t *const buffer, int *const pos);
+    static int getPtNodeArraySizeAndAdvancePosition(const ReadOnlyByteArrayView buffer,
+            int *const pos);
 
     static NodeFlags getFlagsAndAdvancePosition(const uint8_t *const buffer, int *const pos);
+    static AK_FORCE_INLINE NodeFlags getFlagsAndAdvancePosition(
+            const ReadOnlyByteArrayView buffer, int *const pos) {
+        return ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
+    }
 
-    static int getCodePointAndAdvancePosition(const uint8_t *const buffer,
-            const int *const codePointTable, int *const pos);
+    static AK_FORCE_INLINE int getCodePointAndAdvancePosition(const ReadOnlyByteArrayView buffer,
+            const int *const codePointTable, int *const pos) {
+        return ByteArrayUtils::readCodePointAndAdvancePosition(buffer, codePointTable, pos);
+    }
 
     // Returns the number of read characters.
     static int getCharsAndAdvancePosition(const uint8_t *const buffer, const NodeFlags flags,
             const int maxLength, const int *const codePointTable, int *const outBuffer,
             int *const pos);
+    static int getCharsAndAdvancePosition(const ReadOnlyByteArrayView buffer,
+            const NodeFlags flags, const int maxLength, const int *const codePointTable,
+            int *const outBuffer, int *const pos);
 
     // Returns the number of skipped characters.
-    static int skipCharacters(const uint8_t *const buffer, const NodeFlags flags,
-            const int maxLength, const int *const codePointTable, int *const pos);
+    static AK_FORCE_INLINE int skipCharacters(const ReadOnlyByteArrayView buffer,
+            const NodeFlags flags, const int maxLength, const int *const codePointTable,
+            int *const pos) {
+        if (hasMultipleChars(flags)) {
+            bool isTooLong = false;
+            const int length = ByteArrayUtils::advancePositionToBehindString(buffer, maxLength,
+                    codePointTable, pos, &isTooLong);
+            if (isTooLong) {
+                // A PtNode with more code points than maxLength is malformed.
+                ByteArrayUtils::movePastEnd(buffer, pos);
+            }
+            return length;
+        }
+        if (maxLength > 0) {
+            getCodePointAndAdvancePosition(buffer, codePointTable, pos);
+            return 1;
+        }
+        return 0;
+    }
 
-    static int readProbabilityAndAdvancePosition(const uint8_t *const buffer, int *const pos);
+    static AK_FORCE_INLINE int readProbabilityAndAdvancePosition(
+            const ReadOnlyByteArrayView buffer, int *const pos) {
+        return ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
+    }
 
     static int readChildrenPositionAndAdvancePosition(const uint8_t *const buffer,
             const NodeFlags flags, int *const pos);
+    static AK_FORCE_INLINE int readChildrenPositionAndAdvancePosition(
+            const ReadOnlyByteArrayView buffer, const NodeFlags flags, int *const pos) {
+        const int base = *pos;
+        int offset = 0;
+        const NodeFlags positionType = MASK_CHILDREN_POSITION_TYPE & flags;
+        if (positionType == FLAG_CHILDREN_POSITION_TYPE_ONEBYTE) {
+            offset = ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
+        } else if (positionType == FLAG_CHILDREN_POSITION_TYPE_TWOBYTES) {
+            offset = ByteArrayUtils::readUint16AndAdvancePosition(buffer, pos);
+        } else if (positionType == FLAG_CHILDREN_POSITION_TYPE_THREEBYTES) {
+            offset = ByteArrayUtils::readUint24AndAdvancePosition(buffer, pos);
+        } else {
+            // No children.
+            return NOT_A_DICT_POS;
+        }
+        // A truncated offset must not produce a position that looks valid.
+        return ByteArrayUtils::isPastEnd(buffer, *pos) ? NOT_A_DICT_POS : base + offset;
+    }
 
     /**
      * Node Flags
@@ -105,7 +159,10 @@ class PatriciaTrieReadingUtils {
         return nodeFlags;
     }
 
-    static void readPtNodeInfo(const uint8_t *const dictBuf, const int ptNodePos,
+    // Reads the PtNode at ptNodePos. If the PtNode does not fit in the buffer (or is otherwise
+    // malformed), outSiblingPos is past the end of the buffer (ByteArrayUtils::isPastEnd) and the
+    // other values must not be used.
+    static void readPtNodeInfo(const ReadOnlyByteArrayView dictBuf, const int ptNodePos,
             const DictionaryShortcutsStructurePolicy *const shortcutPolicy,
             const DictionaryBigramsStructurePolicy *const bigramPolicy,
             const int *const codePointTable, NodeFlags *const outFlags,
@@ -114,6 +171,9 @@ class PatriciaTrieReadingUtils {
             int *const outSiblingPos);
 
  private:
+    template<typename Buffer>
+    static AK_FORCE_INLINE int readChildrenPosition(const Buffer buffer, const NodeFlags flags, int *const pos);
+
     DISALLOW_IMPLICIT_CONSTRUCTORS(PatriciaTrieReadingUtils);
 
     static const NodeFlags MASK_CHILDREN_POSITION_TYPE;

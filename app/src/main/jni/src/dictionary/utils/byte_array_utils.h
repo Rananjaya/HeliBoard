@@ -20,6 +20,7 @@
 #include <cstdint>
 
 #include "defines.h"
+#include "utils/byte_array_view.h"
 
 namespace latinime {
 
@@ -182,14 +183,18 @@ class ByteArrayUtils {
      * Reads code points until the terminator is found.
      */
     // Returns the length of the string.
+    // outIsTooLong (optional): whether the string was longer than maxLength and was cut.
     static int readStringAndAdvancePosition(const uint8_t *const buffer,
             const int maxLength, const int *const codePointTable, int *const outBuffer,
-            int *const pos) {
+            int *const pos, bool *const outIsTooLong = nullptr) {
         int length = 0;
         int codePoint = readCodePointAndAdvancePosition(buffer, codePointTable, pos);
         while (NOT_A_CODE_POINT != codePoint && length < maxLength) {
             outBuffer[length++] = codePoint;
             codePoint = readCodePointAndAdvancePosition(buffer, codePointTable, pos);
+        }
+        if (outIsTooLong) {
+            *outIsTooLong = NOT_A_CODE_POINT != codePoint;
         }
         return length;
     }
@@ -204,6 +209,159 @@ class ByteArrayUtils {
             length++;
         }
         return length;
+    }
+
+    /**
+     * Bounded reading, for buffers whose size is known (read-only v2 dictionaries).
+     *
+     * Valid data is read exactly as by the methods above. A read that would leave the buffer reads
+     * nothing: it returns 0 (NOT_A_CODE_POINT for code points) and moves the position past the end
+     * of the buffer (pos > size). Following reads then fail the same way, and the caller detects
+     * the malformed data with isPastEnd(). The buffer size must stay well below INT_MAX
+     * (see PatriciaTriePolicy::MAX_DICTIONARY_SIZE).
+     */
+    static AK_FORCE_INLINE bool isInBounds(const ReadOnlyByteArrayView buffer, const int pos,
+            const int length) {
+        // Subtraction instead of pos + length, which could overflow.
+        return pos >= 0 && static_cast<size_t>(length) <= buffer.size()
+                && static_cast<size_t>(pos) <= buffer.size() - static_cast<size_t>(length);
+    }
+
+    static AK_FORCE_INLINE bool isPastEnd(const ReadOnlyByteArrayView buffer, const int pos) {
+        return pos < 0 || static_cast<size_t>(pos) > buffer.size();
+    }
+
+    static AK_FORCE_INLINE void movePastEnd(const ReadOnlyByteArrayView buffer, int *const pos) {
+        *pos = static_cast<int>(buffer.size()) + 1;
+    }
+
+    static AK_FORCE_INLINE uint32_t readUint24AndAdvancePosition(
+            const ReadOnlyByteArrayView buffer, int *const pos) {
+        if (!isInBounds(buffer, *pos, 3)) {
+            movePastEnd(buffer, pos);
+            return 0;
+        }
+        return readUint24AndAdvancePosition(buffer.data(), pos);
+    }
+
+    static AK_FORCE_INLINE uint16_t readUint16AndAdvancePosition(
+            const ReadOnlyByteArrayView buffer, int *const pos) {
+        if (!isInBounds(buffer, *pos, 2)) {
+            movePastEnd(buffer, pos);
+            return 0;
+        }
+        return readUint16AndAdvancePosition(buffer.data(), pos);
+    }
+
+    static AK_FORCE_INLINE uint8_t readUint8AndAdvancePosition(
+            const ReadOnlyByteArrayView buffer, int *const pos) {
+        if (!isInBounds(buffer, *pos, 1)) {
+            movePastEnd(buffer, pos);
+            return 0;
+        }
+        return readUint8AndAdvancePosition(buffer.data(), pos);
+    }
+
+    // codePointTable must be null or have an entry for every one-byte value 0x20-0xFF (see
+    // HeaderReadWriteUtils::readCodePointTable). A NOT_A_CODE_POINT entry is a byte the dictionary
+    // does not define, and is treated as malformed data.
+    static AK_FORCE_INLINE int readCodePointAndAdvancePosition(
+            const ReadOnlyByteArrayView buffer, const int *const codePointTable, int *const pos) {
+        if (!isInBounds(buffer, *pos, 1)) {
+            movePastEnd(buffer, pos);
+            return NOT_A_CODE_POINT;
+        }
+        const uint8_t firstByte = buffer.data()[*pos];
+        if (firstByte < MINIMUM_ONE_BYTE_CHARACTER_VALUE) {
+            if (firstByte == CHARACTER_ARRAY_TERMINATOR) {
+                *pos += 1;
+                return NOT_A_CODE_POINT;
+            }
+            if (!isInBounds(buffer, *pos, 3)) {
+                movePastEnd(buffer, pos);
+                return NOT_A_CODE_POINT;
+            }
+            return readUint24AndAdvancePosition(buffer.data(), pos);
+        }
+        *pos += 1;
+        if (codePointTable) {
+            const int codePoint = codePointTable[firstByte - MINIMUM_ONE_BYTE_CHARACTER_VALUE];
+            if (codePoint == NOT_A_CODE_POINT) {
+                movePastEnd(buffer, pos);
+            }
+            return codePoint;
+        }
+        return firstByte;
+    }
+
+    // Returns the length of the string, like the method above: at most maxLength code points are
+    // stored and a longer string is cut (its next code point is consumed). outIsTooLong (optional)
+    // tells whether that happened, for callers that treat it as malformed data.
+    // maxLength must be small (MAX_WORD_LENGTH or a header attribute limit).
+    static int readStringAndAdvancePosition(const ReadOnlyByteArrayView buffer,
+            const int maxLength, const int *const codePointTable, int *const outBuffer,
+            int *const pos, bool *const outIsTooLong = nullptr) {
+        int length = 0;
+        int codePoint;
+        if (isInBounds(buffer, *pos, getMaxStringSize(maxLength))) {
+            // Fast path: the longest string read here is inside the buffer, so the code points
+            // are read without a check each (this is most strings, all but the last few hundred
+            // bytes of a file).
+            codePoint = readCodePointAndAdvancePosition(buffer.data(), codePointTable, pos);
+            while (NOT_A_CODE_POINT != codePoint && length < maxLength) {
+                outBuffer[length++] = codePoint;
+                codePoint = readCodePointAndAdvancePosition(buffer.data(), codePointTable, pos);
+            }
+            checkCodePointTableEntry(buffer, codePointTable, codePoint, pos);
+        } else {
+            codePoint = readCodePointAndAdvancePosition(buffer, codePointTable, pos);
+            while (NOT_A_CODE_POINT != codePoint && length < maxLength) {
+                outBuffer[length++] = codePoint;
+                codePoint = readCodePointAndAdvancePosition(buffer, codePointTable, pos);
+            }
+        }
+        if (outIsTooLong) {
+            *outIsTooLong = NOT_A_CODE_POINT != codePoint;
+        }
+        return length;
+    }
+
+    // Advances the position and returns the length of the string, see above.
+    static int advancePositionToBehindString(const ReadOnlyByteArrayView buffer,
+            const int maxLength, const int *const codePointTable, int *const pos,
+            bool *const outIsTooLong = nullptr) {
+        int length = 0;
+        int codePoint;
+        if (isInBounds(buffer, *pos, getMaxStringSize(maxLength))) {
+            // Fast path, see readStringAndAdvancePosition.
+            codePoint = readCodePointAndAdvancePosition(buffer.data(), codePointTable, pos);
+            while (NOT_A_CODE_POINT != codePoint && length < maxLength) {
+                codePoint = readCodePointAndAdvancePosition(buffer.data(), codePointTable, pos);
+                length++;
+            }
+            checkCodePointTableEntry(buffer, codePointTable, codePoint, pos);
+        } else {
+            codePoint = readCodePointAndAdvancePosition(buffer, codePointTable, pos);
+            while (NOT_A_CODE_POINT != codePoint && length < maxLength) {
+                codePoint = readCodePointAndAdvancePosition(buffer, codePointTable, pos);
+                length++;
+            }
+        }
+        if (outIsTooLong) {
+            *outIsTooLong = NOT_A_CODE_POINT != codePoint;
+        }
+        return length;
+    }
+
+    // After an unchecked string read that ended on NOT_A_CODE_POINT: if that came from the code
+    // point table (a byte the table does not define) instead of the terminator, the data is
+    // malformed and the position is moved past the end.
+    static AK_FORCE_INLINE void checkCodePointTableEntry(const ReadOnlyByteArrayView buffer,
+            const int *const codePointTable, const int lastCodePoint, int *const pos) {
+        if (codePointTable && lastCodePoint == NOT_A_CODE_POINT
+                && buffer.data()[*pos - 1] != CHARACTER_ARRAY_TERMINATOR) {
+            movePastEnd(buffer, pos);
+        }
     }
 
     /**
@@ -259,6 +417,12 @@ class ByteArrayUtils {
     static const uint8_t MINIMUM_ONE_BYTE_CHARACTER_VALUE;
     static const uint8_t MAXIMUM_ONE_BYTE_CHARACTER_VALUE;
     static const uint8_t CHARACTER_ARRAY_TERMINATOR;
+
+    // Bytes read for a string of at most maxLength code points: maxLength code points and the
+    // terminator (or the code point that makes it too long), each at most 3 bytes.
+    static AK_FORCE_INLINE int getMaxStringSize(const int maxLength) {
+        return (maxLength + 1) * 3;
+    }
 
     static AK_FORCE_INLINE void writeUint32AndAdvancePosition(uint8_t *const buffer,
             const uint32_t data, int *const pos) {

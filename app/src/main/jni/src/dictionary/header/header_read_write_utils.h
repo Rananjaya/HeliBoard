@@ -22,6 +22,7 @@
 #include "defines.h"
 #include "dictionary/interface/dictionary_header_structure_policy.h"
 #include "dictionary/utils/format_utils.h"
+#include "utils/byte_array_view.h"
 
 namespace latinime {
 
@@ -43,11 +44,20 @@ class HeaderReadWriteUtils {
     static DictionaryFlags createAndGetDictionaryFlagsUsingAttributeMap(
             const DictionaryHeaderStructurePolicy::AttributeMap *const attributeMap);
 
+    // Checks the header of a read-only dictionary file before it is parsed: the header size must
+    // fit the file, and every attribute must be a terminated key and value inside the header.
+    static bool isValidHeader(const ReadOnlyByteArrayView dictBuf);
+
     static void fetchAllHeaderAttributes(const uint8_t *const dictBuf,
             DictionaryHeaderStructurePolicy::AttributeMap *const headerAttributes);
 
-    static const int *readCodePointTable(
-            DictionaryHeaderStructurePolicy::AttributeMap *const headerAttributes);
+    // Returns an empty vector when the dictionary has no code point table. Otherwise the table has
+    // exactly CODE_POINT_TABLE_SIZE entries, one per one-byte character value 0x20-0xFF; entries
+    // the dictionary does not define are NOT_A_CODE_POINT, so a lookup never leaves the table.
+    static std::vector<int> readCodePointTable(
+            const DictionaryHeaderStructurePolicy::AttributeMap *const headerAttributes);
+
+    static const int CODE_POINT_TABLE_SIZE;
 
     static bool writeDictionaryVersion(BufferWithExtendableBuffer *const buffer,
             const FormatUtils::FORMAT_VERSION version, int *const writingPos);

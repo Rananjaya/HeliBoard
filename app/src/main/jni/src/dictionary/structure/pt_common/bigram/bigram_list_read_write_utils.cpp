@@ -46,7 +46,7 @@ const BigramListReadWriteUtils::BigramFlags
                 "bigramEntryPos: %d.", buffer.size(), *bigramEntryPos);
         return false;
     }
-    const BigramFlags bigramFlags = ByteArrayUtils::readUint8AndAdvancePosition(buffer.data(),
+    const BigramFlags bigramFlags = ByteArrayUtils::readUint8AndAdvancePosition(buffer,
             bigramEntryPos);
     if (outBigramFlags) {
         *outBigramFlags = bigramFlags;
@@ -60,13 +60,34 @@ const BigramListReadWriteUtils::BigramFlags
 
 /* static */ bool BigramListReadWriteUtils::skipExistingBigrams(const ReadOnlyByteArrayView buffer,
         int *const bigramListPos) {
+    // Only the size of each entry is needed: flags and an address of 0-3 bytes (see
+    // getBigramAddressAndAdvancePosition). Each whole entry must be inside the buffer.
     BigramFlags flags;
     do {
-        if (!getBigramEntryPropertiesAndAdvancePosition(buffer, &flags, 0 /* outTargetPtNodePos */,
-                bigramListPos)) {
+        if (!ByteArrayUtils::isInBounds(buffer, *bigramListPos, 1)) {
+            AKLOGE("Read invalid pos in skipExistingBigrams(). bufSize: %zd, bigramListPos: %d.",
+                    buffer.size(), *bigramListPos);
             return false;
         }
-    } while(hasNext(flags));
+        flags = buffer.data()[*bigramListPos];
+        int addressSize = 0;
+        switch (MASK_ATTRIBUTE_ADDRESS_TYPE & flags) {
+            case FLAG_ATTRIBUTE_ADDRESS_TYPE_ONEBYTE:
+                addressSize = 1;
+                break;
+            case FLAG_ATTRIBUTE_ADDRESS_TYPE_TWOBYTES:
+                addressSize = 2;
+                break;
+            case FLAG_ATTRIBUTE_ADDRESS_TYPE_THREEBYTES:
+                addressSize = 3;
+                break;
+        }
+        if (!ByteArrayUtils::isInBounds(buffer, *bigramListPos, 1 + addressSize)) {
+            ByteArrayUtils::movePastEnd(buffer, bigramListPos);
+            return false;
+        }
+        *bigramListPos += 1 + addressSize;
+    } while (hasNext(flags));
     return true;
 }
 
@@ -76,14 +97,18 @@ const BigramListReadWriteUtils::BigramFlags
     const int origin = *pos;
     switch (MASK_ATTRIBUTE_ADDRESS_TYPE & flags) {
         case FLAG_ATTRIBUTE_ADDRESS_TYPE_ONEBYTE:
-            offset = ByteArrayUtils::readUint8AndAdvancePosition(buffer.data(), pos);
+            offset = ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
             break;
         case FLAG_ATTRIBUTE_ADDRESS_TYPE_TWOBYTES:
-            offset = ByteArrayUtils::readUint16AndAdvancePosition(buffer.data(), pos);
+            offset = ByteArrayUtils::readUint16AndAdvancePosition(buffer, pos);
             break;
         case FLAG_ATTRIBUTE_ADDRESS_TYPE_THREEBYTES:
-            offset = ByteArrayUtils::readUint24AndAdvancePosition(buffer.data(), pos);
+            offset = ByteArrayUtils::readUint24AndAdvancePosition(buffer, pos);
             break;
+    }
+    if (ByteArrayUtils::isPastEnd(buffer, *pos)) {
+        // A truncated offset must not produce a position that looks valid.
+        return NOT_A_DICT_POS;
     }
     if (isOffsetNegative(flags)) {
         return origin - offset;

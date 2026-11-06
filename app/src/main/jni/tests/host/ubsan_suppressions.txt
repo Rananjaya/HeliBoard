@@ -1,0 +1,6 @@
+# UndefinedBehaviorSanitizer suppressions for run_host_tests.sh. Both are inherited from upstream and
+# unrelated to reading dictionary files; every other undefined behaviour still stops the run.
+# NaN converted to int while the forgetting-curve tables are initialized (library load).
+float-cast-overflow:forgetting_curve_utils.cpp
+# (1 << 31) - 1 in TrieMap::popCount when index is 31 (v4/user-history maps; hit by every TrieMapTest).
+signed-integer-overflow:trie_map.h

@@ -33,21 +33,28 @@ const int ShortcutListReadingUtils::WHITELIST_SHORTCUT_PROBABILITY = 15;
 /* static */ ShortcutListReadingUtils::ShortcutFlags
         ShortcutListReadingUtils::getFlagsAndForwardPointer(const ReadOnlyByteArrayView buffer,
                 int *const pos) {
-    return ByteArrayUtils::readUint8AndAdvancePosition(buffer.data(), pos);
+    return ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
 }
 
 /* static */ int ShortcutListReadingUtils::getShortcutListSizeAndForwardPointer(
         const ReadOnlyByteArrayView buffer, int *const pos) {
     // readUint16andAdvancePosition() returns an offset *including* the uint16 field itself.
-    return ByteArrayUtils::readUint16AndAdvancePosition(buffer.data(), pos)
-            - SHORTCUT_LIST_SIZE_FIELD_SIZE;
+    const int sizeWithField = ByteArrayUtils::readUint16AndAdvancePosition(buffer, pos);
+    if (sizeWithField < SHORTCUT_LIST_SIZE_FIELD_SIZE) {
+        // Truncated or malformed: a negative size would move the position backwards.
+        ByteArrayUtils::movePastEnd(buffer, pos);
+        return 0;
+    }
+    return sizeWithField - SHORTCUT_LIST_SIZE_FIELD_SIZE;
 }
 
 /* static */ int ShortcutListReadingUtils::readShortcutTarget(const ReadOnlyByteArrayView buffer,
         const int maxLength, int *const outWord, int *const pos) {
     // TODO: Use codePointTable for shortcuts.
-    return ByteArrayUtils::readStringAndAdvancePosition(buffer.data(), maxLength,
-            nullptr /* codePointTable */, outWord, pos);
+    // Shortcut targets longer than maxLength are cut, as before (the emoji dictionaries have
+    // descriptions longer than MAX_WORD_LENGTH).
+    return ByteArrayUtils::readStringAndAdvancePosition(buffer, maxLength,
+            nullptr /* codePointTable */, outWord, pos, nullptr /* outIsTooLong */);
 }
 
 } // namespace latinime

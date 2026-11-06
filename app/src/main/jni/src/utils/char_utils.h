@@ -64,7 +64,9 @@ class CharUtils {
     }
 
     static AK_FORCE_INLINE int toBaseCodePoint(int c) {
-        if (c < BASE_CHARS_SIZE) {
+        // Negative values (e.g. NOT_A_CODE_POINT, or a malformed dictionary) have no base form and
+        // must not be used as an index.
+        if (c >= 0 && c < BASE_CHARS_SIZE) {
             return static_cast<int>(BASE_CHARS[c]);
         }
         return c;

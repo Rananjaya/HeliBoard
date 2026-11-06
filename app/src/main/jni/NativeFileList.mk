@@ -125,6 +125,8 @@ LATIN_IME_CORE_SRC_FILES += $(LATIN_IME_CORE_SRC_FILES_BACKWARD_V402)
 LATIN_IME_CORE_TEST_FILES := \
     defines_test.cpp \
     dictionary/header/header_read_write_utils_test.cpp \
+    dictionary/structure/pt_common/patricia_trie_reading_utils_test.cpp \
+    dictionary/structure/v2/patricia_trie_policy_test.cpp \
     dictionary/structure/v4/content/language_model_dict_content_test.cpp \
     dictionary/structure/v4/content/language_model_dict_content_global_counters_test.cpp \
     dictionary/structure/v4/content/probability_entry_test.cpp \

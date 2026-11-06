@@ -52,6 +52,10 @@ class PatriciaTriePolicy : public DictionaryStructureWithBufferPolicy {
               mPtNodeArrayReader(mBuffer), mTerminalPtNodePositionsForIteratingWords(),
               mIsCorrupted(false) {}
 
+    // Larger files are rejected when opening. The bundled dictionaries are a few MB; the limit keeps
+    // every position computed while reading (position + 24-bit offset) far away from INT_MAX.
+    static const int MAX_DICTIONARY_SIZE;
+
     AK_FORCE_INLINE int getRootPosition() const {
         return 0;
     }
@@ -147,7 +151,8 @@ class PatriciaTriePolicy : public DictionaryStructureWithBufferPolicy {
             int *const outCodePointCount);
 
     bool isCorrupted() const {
-        return mIsCorrupted;
+        return mIsCorrupted || mPtNodeReader.hasReadMalformedPtNode()
+                || mPtNodeArrayReader.hasReadMalformedPtNodeArray();
     }
 
  private:
