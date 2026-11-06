@@ -53,8 +53,9 @@ android {
         applicationId = "com.ranger.myheliboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 4300
-        versionName = "4.3-beta1"
+        // The release workflow passes -PrcbboardVersionCode / -PrcbboardVersionName (see docs/ci-cd.md).
+        versionCode = providers.gradleProperty("rcbboardVersionCode").orNull?.toInt() ?: 4300
+        versionName = providers.gradleProperty("rcbboardVersionName").orNull ?: "4.3-beta1"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))

@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Gradle init script for the CI unit tests (.github/workflows/ci.yml), see docs/ci-cd.md.
+// XLinkTest checks external web links over the network (HeliBoard wiki, README and layouts.md
+// links). Those results depend on other websites, not on the keyboard, so CI leaves them out.
+// Run them locally with: ./gradlew :app:testDebugUnitTest --tests 'helium314.keyboard.XLinkTest'
+allprojects {
+    tasks.withType(Test).configureEach {
+        filter {
+            excludeTestsMatching 'helium314.keyboard.XLinkTest'
+        }
+    }
+}
