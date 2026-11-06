@@ -1,0 +1,3 @@
+# AOSP native tests that already fail on the unchanged upstream code (run with --all to include them).
+# The test expects detectFormatVersion() to accept format 2, but the code deliberately rejects 2 and 201.
+FormatUtilsTest.TestDetectFormatVersion

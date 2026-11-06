@@ -86,6 +86,17 @@ int PatriciaTriePolicy::getCodePointsAndProbabilityAndReturnCodePointCount(
     int pos = getRootPosition();
     int wordPos = 0;
     const int *const codePointTable = mHeaderPolicy.getCodePointTable();
+    // outCodePoints has room for maxCodePointCount code points (MAX_WORD_LENGTH for all callers).
+    // The word is assembled across several PtNode levels, so a malformed dictionary can describe
+    // a longer path than that. Every write below is checked with this, and such a word is
+    // rejected (return 0) instead of being written past the buffer or silently truncated.
+    const auto isOutOfBounds = [&](const int writePos) {
+        if (writePos >= 0 && writePos < maxCodePointCount) return false;
+        AKLOGE("Word is longer than the output buffer. pos: %d, max: %d", writePos,
+                maxCodePointCount);
+        mIsCorrupted = true;
+        return true;
+    };
     if (outUnigramProbability) {
         *outUnigramProbability = NOT_A_PROBABILITY;
     }
@@ -122,15 +133,16 @@ int PatriciaTriePolicy::getCodePointsAndProbabilityAndReturnCodePointCount(
             if (ptNodePos == startPos) {
                 // We found the position. Copy the rest of the code points in the buffer and return
                 // the length.
+                if (isOutOfBounds(wordPos)) return 0;
                 outCodePoints[wordPos] = character;
                 if (PatriciaTrieReadingUtils::hasMultipleChars(flags)) {
                     int nextChar = PatriciaTrieReadingUtils::getCodePointAndAdvancePosition(
                             mBuffer.data(), codePointTable, &pos);
-                    // We count code points in order to avoid infinite loops if the file is broken
-                    // or if there is some other bug
-                    int charCount = maxCodePointCount;
-                    while (NOT_A_CODE_POINT != nextChar && --charCount > 0) {
-                        outCodePoints[++wordPos] = nextChar;
+                    // The bounds check also ends the loop if the file is broken and the
+                    // terminator is missing.
+                    while (NOT_A_CODE_POINT != nextChar) {
+                        if (isOutOfBounds(++wordPos)) return 0;
+                        outCodePoints[wordPos] = nextChar;
                         nextChar = PatriciaTrieReadingUtils::getCodePointAndAdvancePosition(
                                 mBuffer.data(), codePointTable, &pos);
                     }
@@ -199,13 +211,14 @@ int PatriciaTriePolicy::getCodePointsAndProbabilityAndReturnCodePointCount(
                     const int lastChar = PatriciaTrieReadingUtils::getCodePointAndAdvancePosition(
                             mBuffer.data(), codePointTable, &lastCandidatePtNodePos);
                     // We copy all the characters in this PtNode to the buffer
+                    if (isOutOfBounds(wordPos)) return 0;
                     outCodePoints[wordPos] = lastChar;
                     if (PatriciaTrieReadingUtils::hasMultipleChars(lastFlags)) {
                         int nextChar = PatriciaTrieReadingUtils::getCodePointAndAdvancePosition(
                                 mBuffer.data(), codePointTable, &lastCandidatePtNodePos);
-                        int charCount = maxCodePointCount;
-                        while (-1 != nextChar && --charCount > 0) {
-                            outCodePoints[++wordPos] = nextChar;
+                        while (NOT_A_CODE_POINT != nextChar) {
+                            if (isOutOfBounds(++wordPos)) return 0;
+                            outCodePoints[wordPos] = nextChar;
                             nextChar = PatriciaTrieReadingUtils::getCodePointAndAdvancePosition(
                                     mBuffer.data(), codePointTable, &lastCandidatePtNodePos);
                         }
