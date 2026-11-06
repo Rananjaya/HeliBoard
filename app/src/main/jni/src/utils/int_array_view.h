@@ -112,6 +112,11 @@ class IntArrayView {
     template <size_t N>
     void copyToArray(std::array<int, N> *const buffer, const size_t offset) const {
         ASSERT(mSize + offset <= N);
+        if (mSize == 0) {
+            // Nothing to copy. An empty view may have a null mPtr, and passing a null pointer to
+            // memmove is undefined behaviour even when the size is 0.
+            return;
+        }
         memmove(buffer->data() + offset, mPtr, sizeof(int) * mSize);
     }
 

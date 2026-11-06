@@ -124,6 +124,49 @@ TEST(IntArrayViewTest, TestCopyToArray) {
     EXPECT_EQ(70, buffer[6]);
 }
 
+// Empty views may have a null data pointer (default-constructed view, empty vector, skip() past
+// the end). Copying them must leave the buffer unchanged and must not pass the null pointer to
+// memmove, which is undefined behaviour even for a zero-length copy (UBSan reports it on Linux).
+TEST(IntArrayViewTest, TestCopyToArrayFromEmptyViews) {
+    const std::array<int, 3> original = {{10, 20, 30}};
+    const std::vector<int> emptyVector;
+    const std::vector<int> intVector = {1, 2};
+    const IntArrayView defaultView;
+    const IntArrayView emptyVectorView(emptyVector);
+    const IntArrayView nullPointerView(nullptr, 0);
+    const IntArrayView skippedPastEndView = IntArrayView(intVector).skip(intVector.size());
+    EXPECT_EQ(nullptr, defaultView.data());
+    EXPECT_EQ(nullptr, skippedPastEndView.data());
+    for (const IntArrayView *view :
+            {&defaultView, &emptyVectorView, &nullPointerView, &skippedPastEndView}) {
+        EXPECT_TRUE(view->empty());
+        for (size_t offset = 0; offset <= original.size(); ++offset) {
+            std::array<int, 3> buffer = original;
+            view->copyToArray(&buffer, offset);
+            EXPECT_EQ(original, buffer);
+        }
+    }
+}
+
+// The same through limit(0), which keeps a non-null pointer: still a zero-length copy.
+TEST(IntArrayViewTest, TestCopyToArrayZeroLength) {
+    const std::array<int, 3> original = {{10, 20, 30}};
+    const std::vector<int> intVector = {1, 2, 3};
+    const IntArrayView zeroLengthView = IntArrayView(intVector).limit(0);
+    EXPECT_NE(nullptr, zeroLengthView.data());
+    for (size_t offset = 0; offset <= original.size(); ++offset) {
+        std::array<int, 3> buffer = original;
+        zeroLengthView.copyToArray(&buffer, offset);
+        EXPECT_EQ(original, buffer);
+    }
+    // A full copy into the end of the buffer still works after an empty one.
+    std::array<int, 3> buffer = original;
+    IntArrayView(intVector).limit(2).copyToArray(&buffer, 1);
+    EXPECT_EQ(10, buffer[0]);
+    EXPECT_EQ(1, buffer[1]);
+    EXPECT_EQ(2, buffer[2]);
+}
+
 TEST(IntArrayViewTest, TestFirstOrDefault) {
     const std::vector<int> intVector = {3, 2, 1, 0, -1, -2};
     IntArrayView intArrayView(intVector);
