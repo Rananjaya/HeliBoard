@@ -473,6 +473,8 @@
     <string name="subtype_akkhor_bn_BD">%s (Akkhor)</string>
     <!-- Description for "LANGUAGE_NAME" (Probhat) keyboard subtype with explicit keyboard layout -->
     <string name="subtype_probhat_bn_BD">%s (Probhat)</string>
+    <!-- Description for "LANGUAGE_NAME" (Wijesekara) keyboard subtype with explicit keyboard layout -->
+    <string name="subtype_wijesekara_si_LK">%s (Wijesekara)</string>
     <!-- Description for "LANGUAGE_NAME" (Baishakhi) keyboard subtype with explicit keyboard layout -->
     <string name="subtype_baishakhi_bn_IN">%s (Baishakhi)</string>
     <!-- Description for "LANGUAGE_NAME" (Khipro) keyboard subtype with explicit keyboard layout -->
@@ -807,7 +809,7 @@ New dictionary:
     <string name="about_original_project">Original project</string>
     <string name="about_original_project_description">Based on HeliBoard by Helium314.</string>
     <string name="about_third_party">Third-party resources</string>
-    <string name="about_third_party_description">Emoji dictionaries for English and Sinhala. Unicode License v3 (CLDR) and AGPL-3.0 (Signal), including the Unicode copyright and permission notices.</string>
+    <string name="about_third_party_description">Emoji dictionaries for English and Sinhala, and a Sinhala word dictionary (GPL-3.0-or-later). Unicode License v3 (CLDR) and AGPL-3.0 (Signal), including the Unicode copyright and permission notices.</string>
     <!-- github repo link for about screen -->
     <string name="about_github_link">Source code</string>
     <string name="about_source_code_description">https://github.com/Rananjaya/RCBBoard/tree/develop</string>

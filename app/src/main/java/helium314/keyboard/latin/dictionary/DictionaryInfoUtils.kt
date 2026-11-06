@@ -6,9 +6,10 @@
 package helium314.keyboard.latin.dictionary
 
 import android.content.Context
-import android.text.TextUtils
 import com.android.inputmethod.latin.utils.BinaryDictionaryUtils
+import helium314.keyboard.latin.SinhalaLookup
 import helium314.keyboard.latin.common.FileUtils
+import helium314.keyboard.latin.common.LocaleUtils
 import helium314.keyboard.latin.common.LocaleUtils.constructLocale
 import helium314.keyboard.latin.common.loopOverCodePoints
 import helium314.keyboard.latin.define.DecoderSpecificConstants
@@ -108,11 +109,34 @@ object DictionaryInfoUtils {
     @JvmStatic
     fun getLocalesWithEmojiDicts(context: Context): List<Locale> =
         SubtypeSettings.getEnabledSubtypes(true)
-            .map { it.locale() }.filter { getCachedDictForLocaleAndType(it, Dictionary.TYPE_EMOJI, context) != null }
+            .map { it.locale() }.filter { hasDictionaryForLocaleAndType(it, Dictionary.TYPE_EMOJI, context) }
+
+    /**
+     * True when a dictionary of [type] is available for [locale], either already extracted
+     * to the cache or still bundled in the app assets. The bundled assets are the source of
+     * truth on a fresh install, before the first suggestion query extracts the file.
+     */
+    @JvmStatic
+    fun hasDictionaryForLocaleAndType(locale: Locale, type: String, context: Context): Boolean {
+        if (getCachedDictForLocaleAndType(locale, type, context) != null) return true
+        val assets = getAssetsDictionaryList(context) ?: return false
+        val typedAssets = assets.filter { it.substringBefore("_") == type }
+        return LocaleUtils.getBestMatch(locale, typedAssets) {
+            extractLocaleFromAssetsDictionaryFile(it)
+        } != null
+    }
+
+    /**
+     * Cached dictionaries are `<type>.dict` when copied from assets, and `<type>_user.dict`
+     * when added by hand. The type is the part before `.dict` and before `_`.
+     */
+    @JvmStatic
+    fun dictionaryTypeFromCachedFileName(name: String): String =
+        name.removeSuffix(".dict").substringBefore("_")
 
     @JvmStatic
     fun getCachedDictForLocaleAndType(locale: Locale, type: String, context: Context): File? =
-        getCachedDictsForLocale(locale, context).firstOrNull { it.name.substringBefore("_") == type }
+        getCachedDictsForLocale(locale, context).firstOrNull { dictionaryTypeFromCachedFileName(it.name) == type }
 
     fun getCachedDictsForLocale(locale: Locale, context: Context) =
         getCacheDirectoryForLocale(locale, context)?.let { File(it).listFiles() }.orEmpty()
@@ -160,28 +184,12 @@ object DictionaryInfoUtils {
 
     @JvmStatic
     fun looksValidForDictionaryInsertion(text: CharSequence, spacingAndPunctuations: SpacingAndPunctuations): Boolean {
-        if (TextUtils.isEmpty(text)) {
-            return false
-        }
-        if (text.length > DecoderSpecificConstants.DICTIONARY_MAX_WORD_LENGTH) {
-            return false
-        }
-        var digitCount = 0
-        loopOverCodePoints(text) { codePoint, charCount ->
-            if (Character.isDigit(codePoint)) {
-                // Count digits: see below
-                digitCount += charCount
-                return@loopOverCodePoints false
-            }
-            if (!spacingAndPunctuations.isWordCodePoint(codePoint)) {
-                return false
-            }
-            false
-        }
-        // We reject strings entirely comprised of digits to avoid using PIN codes or credit
-        // card numbers. It would come in handy for word prediction though; a good example is
-        // when writing one's address where the street number is usually quite discriminative,
-        // as well as the postal code.
-        return digitCount < text.length
+        // Sinhala al-lakuna is Mn, and යංශය / රකාරංශය use ZWJ. Those code points are
+        // not word characters for other scripts. [SinhalaLookup] accepts them only inside a Sinhala word.
+        return SinhalaLookup.acceptedForUserDictionary(
+            text,
+            DecoderSpecificConstants.DICTIONARY_MAX_WORD_LENGTH,
+            spacingAndPunctuations::isWordCodePoint
+        )
     }
 }

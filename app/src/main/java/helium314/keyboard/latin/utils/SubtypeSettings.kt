@@ -12,9 +12,11 @@ import androidx.core.app.LocaleManagerCompat
 import androidx.core.content.edit
 import helium314.keyboard.compat.locale
 import helium314.keyboard.keyboard.KeyboardSwitcher
+import helium314.keyboard.latin.R
 import helium314.keyboard.latin.RichInputMethodManager
 import helium314.keyboard.latin.common.Constants.Separators
 import helium314.keyboard.latin.common.LocaleUtils
+import helium314.keyboard.latin.common.LocaleUtils.constructLocale
 import helium314.keyboard.latin.define.DebugFlags
 import helium314.keyboard.latin.settings.Defaults
 import helium314.keyboard.latin.settings.Settings
@@ -37,6 +39,22 @@ object SubtypeSettings {
 
     fun getAllAvailableSubtypes(): List<InputMethodSubtype> =
         resourceSubtypesByLocale.values.flatten() + additionalSubtypes
+
+    /** Subtypes offered in Languages & Layouts, limited by R.array.rcbboard_enabled_locales. */
+    fun getSelectableSubtypes(): List<InputMethodSubtype> =
+        getAllAvailableSubtypes().filter { isAllowedLocale(it.locale()) }
+
+    /** Whether [locale] may be used as a keyboard language (exact match, so en-GB is not en-US). */
+    internal fun isAllowedLocale(locale: Locale, allowed: Set<Locale>? = allowedLocales): Boolean = allowed?.contains(locale) ?: true
+
+    /**
+     * Allow-list from language tags. Empty means no restriction (null), as upstream.
+     * en-US is always added, because getDefaultEnabledSubtypes falls back to it.
+     */
+    internal fun parseAllowedLocales(languageTags: Array<String>): Set<Locale>? {
+        val locales = languageTags.map { it.trim() }.filter { it.isNotEmpty() }.map { it.constructLocale() }
+        return if (locales.isEmpty()) null else (locales + Locale.US).toSet()
+    }
 
     fun getMatchingMainLayoutNameForLocale(locale: Locale): String {
         val subtypes = resourceSubtypesByLocale.values.flatten()
@@ -96,7 +114,8 @@ object SubtypeSettings {
 
     fun getSelectedSubtype(prefs: SharedPreferences): InputMethodSubtype {
         val selectedSubtype = prefs.getString(Settings.PREF_SELECTED_SUBTYPE, Defaults.PREF_SELECTED_SUBTYPE)!!.toSettingsSubtype()
-        if (selectedSubtype.isAdditionalSubtype(prefs) || selectedSubtype == SettingsSubtype.fallbackSubtype)
+        if ((selectedSubtype.isAdditionalSubtype(prefs) && isAllowedLocale(selectedSubtype.locale))
+                || selectedSubtype == SettingsSubtype.fallbackSubtype)
             return selectedSubtype.toAdditionalSubtype()
         // no additional subtype, must be a resource subtype
 
@@ -210,6 +229,7 @@ object SubtypeSettings {
         // LocaleManagerCompat.getSystemLocales(context) sometimes doesn't return all system locales
         reloadSystemLocales(context)
 
+        allowedLocales = parseAllowedLocales(context.resources.getStringArray(R.array.rcbboard_enabled_locales))
         loadResourceSubtypes(context.resources)
         loadAdditionalSubtypes(context.prefs())
         loadEnabledSubtypes(context)
@@ -218,10 +238,11 @@ object SubtypeSettings {
     @Suppress("SameReturnValue")
     private fun getDefaultEnabledSubtypes(): List<InputMethodSubtype> {
         if (systemSubtypes.isNotEmpty()) return systemSubtypes
+        val allowedSubtypeLocales = resourceSubtypesByLocale.keys.filter { isAllowedLocale(it) }
         val subtypes = systemLocales.mapNotNull { locale ->
-            val subtypesOfLocale = resourceSubtypesByLocale[locale]
+            val subtypesOfLocale = resourceSubtypesByLocale[locale]?.takeIf { isAllowedLocale(locale) }
             // get best match
-                ?: LocaleUtils.getBestMatch(locale, resourceSubtypesByLocale.keys) {it}?.let { resourceSubtypesByLocale[it] }
+                ?: LocaleUtils.getBestMatch(locale, allowedSubtypeLocales) {it}?.let { resourceSubtypesByLocale[it] }
             subtypesOfLocale?.firstOrNull()
         }
         if (subtypes.isEmpty()) {
@@ -251,6 +272,9 @@ object SubtypeSettings {
         val prefs = context.prefs()
         val settingsSubtypes = createSettingsSubtypes(prefs.getString(Settings.PREF_ENABLED_SUBTYPES, Defaults.PREF_ENABLED_SUBTYPES)!!)
         for (settingsSubtype in settingsSubtypes) {
+            // Not offered with the current allow-list: skip, but keep it in the saved settings,
+            // so it comes back unchanged if the language is allowed again.
+            if (!isAllowedLocale(settingsSubtype.locale)) continue
             if (settingsSubtype.isAdditionalSubtype(prefs)) {
                 enabledSubtypes.add(settingsSubtype.toAdditionalSubtype())
                 continue
@@ -306,5 +330,7 @@ object SubtypeSettings {
     private val additionalSubtypes = mutableListOf<InputMethodSubtype>()
     private val systemLocales = mutableListOf<Locale>()
     private val systemSubtypes = mutableListOf<InputMethodSubtype>()
+    /** null: all languages allowed. Set in [init] from R.array.rcbboard_enabled_locales. */
+    private var allowedLocales: Set<Locale>? = null
     private val TAG = SubtypeSettings::class.simpleName
 }

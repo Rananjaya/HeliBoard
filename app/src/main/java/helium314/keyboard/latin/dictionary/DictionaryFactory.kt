@@ -46,13 +46,17 @@ object DictionaryFactory {
 
     fun getAvailableDictsForLocale(locale: Locale, context: Context, useEmojiDict: Boolean): Pair<Array<out File>, List<String>> {
         var cachedDicts = DictionaryInfoUtils.getCachedDictsForLocale(locale, context)
-        if (!useEmojiDict) cachedDicts = cachedDicts.filter { it.name.substringBefore("_") != Dictionary.TYPE_EMOJI }.toTypedArray()
+        if (!useEmojiDict) cachedDicts = cachedDicts.filter {
+            DictionaryInfoUtils.dictionaryTypeFromCachedFileName(it.name) != Dictionary.TYPE_EMOJI
+        }.toTypedArray()
 
         val nonExtractedDicts = mutableListOf<String>()
         DictionaryInfoUtils.getAssetsDictionaryList(context)
             // file name is <type>_<language tag>.dict
             ?.groupBy { it.substringBefore("_") }
             ?.forEach { (dictType, dicts) ->
+                // bundled emoji dicts must respect the setting too, not only already-extracted ones
+                if (!useEmojiDict && dictType == Dictionary.TYPE_EMOJI) return@forEach
                 if (cachedDicts.any { it.name == "$dictType.dict" })
                     return@forEach // dictionary is already extracted (can't be old because of cleanup on upgrade)
                 val bestMatch = LocaleUtils.getBestMatch(locale, dicts) {

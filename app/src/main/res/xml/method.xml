@@ -992,6 +992,16 @@
         android:imeSubtypeExtraValue="KeyboardLayoutSet=MAIN:sinhala,NoShiftProximityCorrection,EmojiCapable"
         android:isAsciiCapable="false"
     />
+    <!-- Sinhala Wijesekara (SLS 1134), with the AltGr characters of the standard on long-press -->
+    <subtype android:icon="@drawable/ic_ime_switcher"
+        android:label="@string/subtype_wijesekara_si_LK"
+        android:subtypeId="0x4ab35e8d"
+        android:imeSubtypeLocale="si_LK"
+        android:languageTag="si-LK"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="KeyboardLayoutSet=MAIN:sinhala_wijesekara,NoShiftProximityCorrection,EmojiCapable"
+        android:isAsciiCapable="false"
+    />
     <subtype android:icon="@drawable/ic_ime_switcher"
         android:label="@string/subtype_generic"
         android:subtypeId="0x8e94d413"

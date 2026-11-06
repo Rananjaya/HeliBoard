@@ -23,6 +23,8 @@ private val packagedLicenceFiles = listOf(
     "Unicode-License-Signal-emoji-search-index.txt",
     "AGPL-3.0.txt",
     "THIRD_PARTY_NOTICES.md",
+    "LICENSES-en.txt",
+    "GPL-3.0.txt",
 )
 
 /** Shows the third-party licence files packaged at assets/third_party_licenses/. */

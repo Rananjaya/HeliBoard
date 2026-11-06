@@ -28,6 +28,30 @@ class DictionaryTest {
         assertEquals("when", ag.mNgrams.first().mTargetWord.mWord)
     }
 
+    // "Suggest emojis" off must also skip the bundled emoji dict, and not re-extract it after the cached copy is filtered
+    @Test fun bundledEmojiDictRespectsSuggestEmojisSetting() {
+        val context = org.robolectric.RuntimeEnvironment.getApplication()
+        val locale = java.util.Locale.forLanguageTag("si")
+        val factory = helium314.keyboard.latin.dictionary.DictionaryFactory
+
+        val (_, bundledOn) = factory.getAvailableDictsForLocale(locale, context, true)
+        assertTrue(bundledOn.any { it.startsWith("emoji_") }, "$bundledOn")
+        assertTrue("main_si.dict" in bundledOn, "$bundledOn")
+
+        val (_, bundledOff) = factory.getAvailableDictsForLocale(locale, context, false)
+        assertTrue(bundledOff.none { it.startsWith("emoji_") }, "$bundledOff")
+        assertTrue("main_si.dict" in bundledOff, "$bundledOff") // Sinhala words unaffected
+
+        // already extracted copy, as on a phone after first use
+        val cacheDir = helium314.keyboard.latin.dictionary.DictionaryInfoUtils.getCacheDirectoryForLocale(locale, context)!!
+        File(cacheDir, "emoji.dict").writeText("x")
+        val (cachedOff, bundledOff2) = factory.getAvailableDictsForLocale(locale, context, false)
+        assertTrue(cachedOff.none { it.name == "emoji.dict" })
+        assertTrue(bundledOff2.none { it.startsWith("emoji_") }, "$bundledOff2")
+        val (cachedOn, _) = factory.getAvailableDictsForLocale(locale, context, true)
+        assertTrue(cachedOn.any { it.name == "emoji.dict" })
+    }
+
     @Test fun readAndWrite() {
         val dict = DictIO.readCombinedDictionary("src/test/resources/somelist.combined")
         val tempFile = "src/test/resources/somelist.temp"

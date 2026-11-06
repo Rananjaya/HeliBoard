@@ -9,12 +9,14 @@ package helium314.keyboard.latin.dictionary;
 import com.android.inputmethod.latin.BinaryDictionary;
 
 import helium314.keyboard.latin.NgramContext;
+import helium314.keyboard.latin.SinhalaLookup;
 import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo;
 import helium314.keyboard.latin.common.ComposedData;
 import helium314.keyboard.latin.makedict.WordProperty;
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -29,6 +31,9 @@ public final class ReadOnlyBinaryDictionary extends Dictionary {
      * that change the state of dictionary.
      */
     private final ReentrantReadWriteLock mLock = new ReentrantReadWriteLock();
+
+    /** Distinct native traverse session for the Sinhala NFC query. */
+    private static final int SINHALA_NORMALIZED_SESSION_OFFSET = 0x40000000;
 
     private final BinaryDictionary mBinaryDictionary;
 
@@ -51,9 +56,30 @@ public final class ReadOnlyBinaryDictionary extends Dictionary {
             final float[] inOutWeightOfLangModelVsSpatialModel) {
         if (mLock.readLock().tryLock()) {
             try {
-                return mBinaryDictionary.getSuggestions(composedData, ngramContext,
-                        proximityInfoHandle, settingsValuesForSuggestion, sessionId,
-                        weightForLocale, inOutWeightOfLangModelVsSpatialModel);
+                final ArrayList<SuggestedWordInfo> suggestions = mBinaryDictionary.getSuggestions(
+                        composedData, ngramContext, proximityInfoHandle,
+                        settingsValuesForSuggestion, sessionId, weightForLocale,
+                        inOutWeightOfLangModelVsSpatialModel);
+                if (composedData.mIsBatchMode) {
+                    return suggestions;
+                }
+                final String normalizedWord = SinhalaLookup.nfcFormIfDifferent(
+                        composedData.mTypedWord);
+                if (normalizedWord == null) {
+                    return suggestions;
+                }
+                // The first query already wrote the caller's weight. Keep that value.
+                final float[] weightCopy = inOutWeightOfLangModelVsSpatialModel == null
+                        ? null
+                        : Arrays.copyOf(inOutWeightOfLangModelVsSpatialModel,
+                                inOutWeightOfLangModelVsSpatialModel.length);
+                final ArrayList<SuggestedWordInfo> normalizedSuggestions =
+                        mBinaryDictionary.getSuggestions(
+                                SinhalaLookup.exactLookupData(normalizedWord), ngramContext,
+                                proximityInfoHandle, settingsValuesForSuggestion,
+                                sessionId ^ SINHALA_NORMALIZED_SESSION_OFFSET, weightForLocale,
+                                weightCopy);
+                return SinhalaLookup.mergeSuggestions(suggestions, normalizedSuggestions);
             } finally {
                 mLock.readLock().unlock();
             }
@@ -65,7 +91,11 @@ public final class ReadOnlyBinaryDictionary extends Dictionary {
     public boolean isInDictionary(final String word) {
         if (mLock.readLock().tryLock()) {
             try {
-                return mBinaryDictionary.isInDictionary(word);
+                if (mBinaryDictionary.isInDictionary(word)) {
+                    return true;
+                }
+                final String normalizedWord = SinhalaLookup.nfcFormIfDifferent(word);
+                return normalizedWord != null && mBinaryDictionary.isInDictionary(normalizedWord);
             } finally {
                 mLock.readLock().unlock();
             }
@@ -89,7 +119,15 @@ public final class ReadOnlyBinaryDictionary extends Dictionary {
     public int getFrequency(final String word) {
         if (mLock.readLock().tryLock()) {
             try {
-                return mBinaryDictionary.getFrequency(word);
+                final int frequency = mBinaryDictionary.getFrequency(word);
+                if (frequency != NOT_A_PROBABILITY) {
+                    return frequency;
+                }
+                final String normalizedWord = SinhalaLookup.nfcFormIfDifferent(word);
+                if (normalizedWord == null) {
+                    return NOT_A_PROBABILITY;
+                }
+                return mBinaryDictionary.getFrequency(normalizedWord);
             } finally {
                 mLock.readLock().unlock();
             }
@@ -101,7 +139,15 @@ public final class ReadOnlyBinaryDictionary extends Dictionary {
     public int getMaxFrequencyOfExactMatches(final String word) {
         if (mLock.readLock().tryLock()) {
             try {
-                return mBinaryDictionary.getMaxFrequencyOfExactMatches(word);
+                final int frequency = mBinaryDictionary.getMaxFrequencyOfExactMatches(word);
+                if (frequency != NOT_A_PROBABILITY) {
+                    return frequency;
+                }
+                final String normalizedWord = SinhalaLookup.nfcFormIfDifferent(word);
+                if (normalizedWord == null) {
+                    return NOT_A_PROBABILITY;
+                }
+                return mBinaryDictionary.getMaxFrequencyOfExactMatches(normalizedWord);
             } finally {
                 mLock.readLock().unlock();
             }
@@ -113,7 +159,16 @@ public final class ReadOnlyBinaryDictionary extends Dictionary {
     public WordProperty getWordProperty(String word, boolean isBeginningOfSentence) {
         if (mLock.readLock().tryLock()) {
             try {
-                return mBinaryDictionary.getWordProperty(word, isBeginningOfSentence);
+                final WordProperty property = mBinaryDictionary.getWordProperty(word,
+                        isBeginningOfSentence);
+                if (property != null) {
+                    return property;
+                }
+                final String normalizedWord = SinhalaLookup.nfcFormIfDifferent(word);
+                if (normalizedWord == null) {
+                    return null;
+                }
+                return mBinaryDictionary.getWordProperty(normalizedWord, isBeginningOfSentence);
             } finally {
                 mLock.readLock().unlock();
             }

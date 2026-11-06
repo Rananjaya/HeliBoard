@@ -30,9 +30,19 @@ val thirdPartyLicenceNames = listOf(
     "Unicode-License-Signal-emoji-search-index.txt",
 )
 
+// Same copy task as the files in licenses/. These stay in third_party/sinhala-dictionary/.
+val sinhalaDictionaryLicenceNames = listOf(
+    "LICENSES-en.txt",
+    "GPL-3.0.txt",
+)
+
 val syncThirdPartyLicenses = tasks.register<SyncThirdPartyLicensesTask>("syncThirdPartyLicenses") {
     val licencesDir = rootProject.layout.projectDirectory.dir("licenses")
-    licenceFiles.setFrom(thirdPartyLicenceNames.map { licencesDir.file(it) })
+    val sinhalaDir = rootProject.layout.projectDirectory.dir("third_party/sinhala-dictionary")
+    licenceFiles.setFrom(
+        thirdPartyLicenceNames.map { licencesDir.file(it) }
+            + sinhalaDictionaryLicenceNames.map { sinhalaDir.file(it) }
+    )
     outputDirectory.set(layout.buildDirectory.dir("generated/thirdPartyLicenseAssets"))
 }
 

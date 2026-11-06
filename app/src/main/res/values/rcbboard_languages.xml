@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<resources>
+    <!--
+        RCBBoard: keyboard languages offered in Languages & Layouts.
+        Each item is a language tag that must match a subtype locale in xml/method.xml exactly
+        (en-US matches English (US) only, not en-GB). All layouts of an allowed locale are offered,
+        so si-LK gives both Sinhala layouts. en-US is always kept, because it is the fallback when
+        no system language matches. Leave the array empty to offer all languages, as upstream.
+        Dictionaries, spell checking and multilingual typing are not limited by this list.
+    -->
+    <string-array name="rcbboard_enabled_locales" translatable="false">
+        <item>en-US</item>
+        <item>si-LK</item>
+    </string-array>
+</resources>
