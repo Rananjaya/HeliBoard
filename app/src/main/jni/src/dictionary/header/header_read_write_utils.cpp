@@ -16,6 +16,7 @@
 
 #include "dictionary/header/header_read_write_utils.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <memory>
@@ -42,6 +43,8 @@ const int HeaderReadWriteUtils::HEADER_DICTIONARY_VERSION_SIZE = 2;
 const int HeaderReadWriteUtils::HEADER_FLAG_SIZE = 2;
 const int HeaderReadWriteUtils::HEADER_SIZE_FIELD_SIZE = 4;
 const char *const HeaderReadWriteUtils::CODE_POINT_TABLE_KEY = "codePointTable";
+// One-byte characters are 0x20-0xFF, see ByteArrayUtils::readCodePointAndAdvancePosition.
+const int HeaderReadWriteUtils::CODE_POINT_TABLE_SIZE = 0xFF - 0x20 + 1;
 
 const HeaderReadWriteUtils::DictionaryFlags HeaderReadWriteUtils::NO_FLAGS = 0;
 
@@ -66,39 +69,91 @@ typedef DictionaryHeaderStructurePolicy::AttributeMap AttributeMap;
     return NO_FLAGS;
 }
 
+/* static */ bool HeaderReadWriteUtils::isValidHeader(const ReadOnlyByteArrayView dictBuf) {
+    if (dictBuf.size() < static_cast<size_t>(getHeaderOptionsPosition())) {
+        AKLOGE("Dictionary is too small for a header. size: %zd", dictBuf.size());
+        return false;
+    }
+    // Read as unsigned: a size of 2^31 or more must not turn into a negative int.
+    const uint32_t headerSize = ByteArrayUtils::readUint32(dictBuf.data(),
+            HEADER_MAGIC_NUMBER_SIZE + HEADER_DICTIONARY_VERSION_SIZE + HEADER_FLAG_SIZE);
+    if (headerSize < static_cast<uint32_t>(getHeaderOptionsPosition())
+            || headerSize > dictBuf.size()) {
+        AKLOGE("Invalid header size: %u, dictionary size: %zd", headerSize, dictBuf.size());
+        return false;
+    }
+    // Every attribute key and value must be a terminated string inside the header.
+    const ReadOnlyByteArrayView header(dictBuf.data(), headerSize);
+    int pos = getHeaderOptionsPosition();
+    while (pos < static_cast<int>(headerSize)) {
+        bool isKeyTooLong = false;
+        bool isValueTooLong = false;
+        ByteArrayUtils::advancePositionToBehindString(header, MAX_ATTRIBUTE_KEY_LENGTH,
+                nullptr /* codePointTable */, &pos, &isKeyTooLong);
+        ByteArrayUtils::advancePositionToBehindString(header, MAX_ATTRIBUTE_VALUE_LENGTH,
+                nullptr /* codePointTable */, &pos, &isValueTooLong);
+        if (ByteArrayUtils::isPastEnd(header, pos)) {
+            AKLOGE("Header attribute is not terminated inside the header. header size: %u",
+                    headerSize);
+            return false;
+        }
+        if (isKeyTooLong || isValueTooLong) {
+            // The parser would read the rest of the attribute as the next key.
+            AKLOGE("Header attribute is too long. key: %d, value: %d", isKeyTooLong,
+                    isValueTooLong);
+            return false;
+        }
+    }
+    return true;
+}
+
 /* static */ void HeaderReadWriteUtils::fetchAllHeaderAttributes(const uint8_t *const dictBuf,
         AttributeMap *const headerAttributes) {
     const int headerSize = getHeaderSize(dictBuf);
     int pos = getHeaderOptionsPosition();
-    if (pos == NOT_A_DICT_POS) {
+    if (pos == NOT_A_DICT_POS || headerSize < pos) {
         // The header doesn't have header options.
         return;
     }
+    // Reads never leave the header. Read-only dictionaries are checked with isValidHeader() before
+    // this, so the header is also inside the file.
+    const ReadOnlyByteArrayView header(dictBuf, headerSize);
     int keyBuffer[MAX_ATTRIBUTE_KEY_LENGTH];
     std::unique_ptr<int[]> valueBuffer(new int[MAX_ATTRIBUTE_VALUE_LENGTH]);
     while (pos < headerSize) {
         // The values in the header don't use the code point table for their encoding.
-        const int keyLength = ByteArrayUtils::readStringAndAdvancePosition(dictBuf,
-                MAX_ATTRIBUTE_KEY_LENGTH, nullptr /* codePointTable */, keyBuffer, &pos);
+        const int keyLength = ByteArrayUtils::readStringAndAdvancePosition(header,
+                MAX_ATTRIBUTE_KEY_LENGTH, nullptr /* codePointTable */, keyBuffer, &pos,
+                nullptr /* outIsTooLong */);
         std::vector<int> key;
         key.insert(key.end(), keyBuffer, keyBuffer + keyLength);
-        const int valueLength = ByteArrayUtils::readStringAndAdvancePosition(dictBuf,
-                MAX_ATTRIBUTE_VALUE_LENGTH, nullptr /* codePointTable */, valueBuffer.get(), &pos);
+        const int valueLength = ByteArrayUtils::readStringAndAdvancePosition(header,
+                MAX_ATTRIBUTE_VALUE_LENGTH, nullptr /* codePointTable */, valueBuffer.get(), &pos,
+                nullptr /* outIsTooLong */);
+        if (ByteArrayUtils::isPastEnd(header, pos)) {
+            AKLOGE("Ignoring a header attribute that is not terminated inside the header.");
+            return;
+        }
         std::vector<int> value;
         value.insert(value.end(), valueBuffer.get(), valueBuffer.get() + valueLength);
         headerAttributes->insert(AttributeMap::value_type(key, value));
     }
 }
 
-/* static */ const int *HeaderReadWriteUtils::readCodePointTable(
-        AttributeMap *const headerAttributes) {
+/* static */ std::vector<int> HeaderReadWriteUtils::readCodePointTable(
+        const AttributeMap *const headerAttributes) {
     AttributeMap::key_type keyVector;
     insertCharactersIntoVector(CODE_POINT_TABLE_KEY, &keyVector);
     AttributeMap::const_iterator it = headerAttributes->find(keyVector);
     if (it == headerAttributes->end()) {
-        return nullptr;
+        return std::vector<int>();
     }
-    return it->second.data();
+    // One entry per one-byte value. A shorter table leaves the remaining bytes undefined
+    // (NOT_A_CODE_POINT); entries beyond CODE_POINT_TABLE_SIZE can never be addressed.
+    std::vector<int> table(CODE_POINT_TABLE_SIZE, NOT_A_CODE_POINT);
+    const size_t count = std::min(it->second.size(), table.size());
+    std::copy(it->second.begin(), it->second.begin() + count, table.begin());
+    return table;
 }
 
 /* static */ bool HeaderReadWriteUtils::writeDictionaryVersion(

@@ -19,6 +19,10 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <vector>
+
+#include "defines.h"
+#include "utils/byte_array_view.h"
 
 namespace latinime {
 namespace {
@@ -99,6 +103,150 @@ TEST(ByteArrayUtilsTest, TestWriteAndReadCodePoint) {
     EXPECT_EQ(0x20, ByteArrayUtils::readCodePoint(buffer, 3));
     EXPECT_EQ(0x41, ByteArrayUtils::readCodePoint(buffer, 4));
     EXPECT_EQ(NOT_A_CODE_POINT, ByteArrayUtils::readCodePoint(buffer, 5));
+}
+
+// Bounded reading (ReadOnlyByteArrayView): reads never leave the buffer, and a read that would
+// leaves the position past the end so the caller can reject the data.
+TEST(ByteArrayUtilsTest, TestBoundedReadInt) {
+    const uint8_t buffer[] = { 0x10, 0x20, 0x30 };
+    const ReadOnlyByteArrayView view(buffer, sizeof(buffer));
+    const int pastEnd = static_cast<int>(sizeof(buffer)) + 1;
+
+    int pos = 0;
+    EXPECT_EQ(0x102030u, ByteArrayUtils::readUint24AndAdvancePosition(view, &pos));
+    EXPECT_EQ(3, pos);
+    EXPECT_FALSE(ByteArrayUtils::isPastEnd(view, pos)); // exactly at the end is fine
+
+    pos = 1;
+    EXPECT_EQ(0x2030u, ByteArrayUtils::readUint16AndAdvancePosition(view, &pos));
+    EXPECT_EQ(3, pos);
+
+    // Reads that are partly or completely outside the buffer read nothing.
+    pos = 1;
+    EXPECT_EQ(0u, ByteArrayUtils::readUint24AndAdvancePosition(view, &pos));
+    EXPECT_EQ(pastEnd, pos);
+    pos = 2;
+    EXPECT_EQ(0u, ByteArrayUtils::readUint16AndAdvancePosition(view, &pos));
+    EXPECT_EQ(pastEnd, pos);
+    pos = 3;
+    EXPECT_EQ(0u, ByteArrayUtils::readUint8AndAdvancePosition(view, &pos));
+    EXPECT_EQ(pastEnd, pos);
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(view, pos));
+    // Once past the end, every further read fails the same way.
+    EXPECT_EQ(0u, ByteArrayUtils::readUint8AndAdvancePosition(view, &pos));
+    EXPECT_EQ(pastEnd, pos);
+
+    // Negative positions.
+    pos = -1;
+    EXPECT_EQ(0u, ByteArrayUtils::readUint8AndAdvancePosition(view, &pos));
+    EXPECT_EQ(pastEnd, pos);
+    pos = NOT_A_DICT_POS;
+    EXPECT_EQ(0u, ByteArrayUtils::readUint24AndAdvancePosition(view, &pos));
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(view, pos));
+
+    // Empty buffer.
+    const ReadOnlyByteArrayView empty;
+    pos = 0;
+    EXPECT_EQ(0u, ByteArrayUtils::readUint8AndAdvancePosition(empty, &pos));
+    EXPECT_EQ(1, pos);
+}
+
+TEST(ByteArrayUtilsTest, TestBoundsCheckIntegerLimits) {
+    const uint8_t buffer[] = { 1, 2, 3, 4 };
+    const ReadOnlyByteArrayView view(buffer, sizeof(buffer));
+    EXPECT_TRUE(ByteArrayUtils::isInBounds(view, 0, 4));
+    EXPECT_TRUE(ByteArrayUtils::isInBounds(view, 1, 3));
+    EXPECT_TRUE(ByteArrayUtils::isInBounds(view, 4, 0));
+    EXPECT_FALSE(ByteArrayUtils::isInBounds(view, 2, 3));
+    EXPECT_FALSE(ByteArrayUtils::isInBounds(view, 0, 5));
+    EXPECT_FALSE(ByteArrayUtils::isInBounds(view, -1, 1));
+    // pos + length would overflow an int; the check must not.
+    EXPECT_FALSE(ByteArrayUtils::isInBounds(view, S_INT_MAX, 1));
+    EXPECT_FALSE(ByteArrayUtils::isInBounds(view, S_INT_MAX - 1, 3));
+    EXPECT_FALSE(ByteArrayUtils::isInBounds(view, S_INT_MIN, 1));
+    int pos = S_INT_MAX;
+    EXPECT_EQ(0u, ByteArrayUtils::readUint24AndAdvancePosition(view, &pos));
+    EXPECT_EQ(5, pos);
+    EXPECT_FALSE(ByteArrayUtils::isPastEnd(view, 4));
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(view, 5));
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(view, -1));
+}
+
+TEST(ByteArrayUtilsTest, TestBoundedReadCodePoint) {
+    // 'a', 3-byte U+0D9A (Sinhala KA), terminator, then a 3-byte code point cut after 2 bytes.
+    const uint8_t buffer[] = { 'a', 0x00, 0x0D, 0x9A, 0x1F, 0x00, 0x0D };
+    const ReadOnlyByteArrayView view(buffer, sizeof(buffer));
+    int pos = 0;
+    EXPECT_EQ('a', ByteArrayUtils::readCodePointAndAdvancePosition(view, nullptr, &pos));
+    EXPECT_EQ(0x0D9A, ByteArrayUtils::readCodePointAndAdvancePosition(view, nullptr, &pos));
+    EXPECT_EQ(NOT_A_CODE_POINT, ByteArrayUtils::readCodePointAndAdvancePosition(view, nullptr,
+            &pos));
+    EXPECT_EQ(5, pos);
+    EXPECT_FALSE(ByteArrayUtils::isPastEnd(view, pos));
+    // truncated 3-byte code point
+    EXPECT_EQ(NOT_A_CODE_POINT, ByteArrayUtils::readCodePointAndAdvancePosition(view, nullptr,
+            &pos));
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(view, pos));
+}
+
+TEST(ByteArrayUtilsTest, TestBoundedReadCodePointTable) {
+    // A table as built by HeaderReadWriteUtils::readCodePointTable: two defined entries, the rest
+    // NOT_A_CODE_POINT.
+    std::vector<int> table(0xFF - 0x20 + 1, NOT_A_CODE_POINT);
+    table[0] = 0x0D9A;
+    table[1] = 'z';
+    const uint8_t buffer[] = { 0x20, 0x21, 0x22, 0xFF };
+    const ReadOnlyByteArrayView view(buffer, sizeof(buffer));
+    int pos = 0;
+    EXPECT_EQ(0x0D9A, ByteArrayUtils::readCodePointAndAdvancePosition(view, table.data(), &pos));
+    EXPECT_EQ('z', ByteArrayUtils::readCodePointAndAdvancePosition(view, table.data(), &pos));
+    EXPECT_FALSE(ByteArrayUtils::isPastEnd(view, pos));
+    // 0x22 is not defined by the table: malformed
+    EXPECT_EQ(NOT_A_CODE_POINT, ByteArrayUtils::readCodePointAndAdvancePosition(view,
+            table.data(), &pos));
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(view, pos));
+    // The highest index (0xFF) is inside the table.
+    pos = 3;
+    EXPECT_EQ(NOT_A_CODE_POINT, ByteArrayUtils::readCodePointAndAdvancePosition(view,
+            table.data(), &pos));
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(view, pos));
+}
+
+TEST(ByteArrayUtilsTest, TestBoundedReadString) {
+    const uint8_t terminated[] = { 'a', 'b', 'c', 0x1F, 'x' };
+    const ReadOnlyByteArrayView view(terminated, sizeof(terminated));
+    int out[8];
+    int pos = 0;
+    bool isTooLong = true;
+    EXPECT_EQ(3, ByteArrayUtils::readStringAndAdvancePosition(view, 8, nullptr, out, &pos,
+            &isTooLong));
+    EXPECT_EQ(4, pos);
+    EXPECT_FALSE(isTooLong);
+    EXPECT_EQ('c', out[2]);
+
+    // Longer than maxLength: cut (as before) and reported.
+    pos = 0;
+    EXPECT_EQ(2, ByteArrayUtils::readStringAndAdvancePosition(view, 2, nullptr, out, &pos,
+            &isTooLong));
+    EXPECT_TRUE(isTooLong);
+    EXPECT_FALSE(ByteArrayUtils::isPastEnd(view, pos));
+    // Exactly maxLength code points is not too long.
+    pos = 0;
+    EXPECT_EQ(3, ByteArrayUtils::advancePositionToBehindString(view, 3, nullptr, &pos,
+            &isTooLong));
+    EXPECT_FALSE(isTooLong);
+    EXPECT_EQ(4, pos);
+
+    // No terminator before the end of the buffer: stops at the end, never reads beyond it.
+    const uint8_t unterminated[] = { 'a', 'b', 'c' };
+    const ReadOnlyByteArrayView cut(unterminated, sizeof(unterminated));
+    pos = 0;
+    EXPECT_EQ(3, ByteArrayUtils::readStringAndAdvancePosition(cut, 8, nullptr, out, &pos,
+            &isTooLong));
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(cut, pos));
+    pos = 0;
+    ByteArrayUtils::advancePositionToBehindString(cut, 8, nullptr, &pos, nullptr);
+    EXPECT_TRUE(ByteArrayUtils::isPastEnd(cut, pos));
 }
 
 }  // namespace

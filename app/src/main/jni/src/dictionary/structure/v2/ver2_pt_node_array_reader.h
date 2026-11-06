@@ -27,17 +27,24 @@ namespace latinime {
 
 class Ver2PtNodeArrayReader : public PtNodeArrayReader {
  public:
-    Ver2PtNodeArrayReader(const ReadOnlyByteArrayView buffer) : mBuffer(buffer) {};
+    Ver2PtNodeArrayReader(const ReadOnlyByteArrayView buffer)
+            : mBuffer(buffer), mHasReadMalformedPtNodeArray(false) {};
 
     virtual bool readPtNodeArrayInfoAndReturnIfValid(const int ptNodeArrayPos,
             int *const outPtNodeCount, int *const outFirstPtNodePos) const;
     virtual bool readForwardLinkAndReturnIfValid(const int forwordLinkPos,
             int *const outNextPtNodeArrayPos) const;
 
+    // True once a PtNode array at an invalid position, or with a truncated size, was read.
+    bool hasReadMalformedPtNodeArray() const {
+        return mHasReadMalformedPtNodeArray;
+    }
+
  private:
     DISALLOW_COPY_AND_ASSIGN(Ver2PtNodeArrayReader);
 
     const ReadOnlyByteArrayView mBuffer;
+    mutable bool mHasReadMalformedPtNodeArray;
 };
 } // namespace latinime
 #endif /* LATINIME_VER2_PT_NODE_ARRAY_READER_H */

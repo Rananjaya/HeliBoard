@@ -17,6 +17,7 @@
 #include "dictionary/structure/v2/ver2_pt_node_array_reader.h"
 
 #include "dictionary/structure/pt_common/patricia_trie_reading_utils.h"
+#include "dictionary/utils/byte_array_utils.h"
 
 namespace latinime {
 
@@ -27,11 +28,18 @@ bool Ver2PtNodeArrayReader::readPtNodeArrayInfoAndReturnIfValid(const int ptNode
         AKLOGE("Reading PtNode array info from invalid dictionary position: %d, dict size: %zd",
                 ptNodeArrayPos, mBuffer.size());
         ASSERT(false);
+        mHasReadMalformedPtNodeArray = true;
         return false;
     }
     int readingPos = ptNodeArrayPos;
     const int ptNodeCountInArray = PatriciaTrieReadingUtils::getPtNodeArraySizeAndAdvancePosition(
-            mBuffer.data(), &readingPos);
+            mBuffer, &readingPos);
+    if (ByteArrayUtils::isPastEnd(mBuffer, readingPos)) {
+        AKLOGE("PtNode array size is truncated. pos: %d, dict size: %zd", ptNodeArrayPos,
+                mBuffer.size());
+        mHasReadMalformedPtNodeArray = true;
+        return false;
+    }
     *outPtNodeCount = ptNodeCountInArray;
     *outFirstPtNodePos = readingPos;
     return true;

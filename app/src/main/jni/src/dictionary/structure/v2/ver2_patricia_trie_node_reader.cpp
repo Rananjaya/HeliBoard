@@ -17,6 +17,7 @@
 #include "dictionary/structure/v2/ver2_patricia_trie_node_reader.h"
 
 #include "dictionary/structure/pt_common/patricia_trie_reading_utils.h"
+#include "dictionary/utils/byte_array_utils.h"
 
 namespace latinime {
 
@@ -37,12 +38,19 @@ const PtNodeParams Ver2ParticiaTrieNodeReader::fetchPtNodeParamsInBufferFromPtNo
     int shortcutPos = NOT_A_DICT_POS;
     int bigramPos = NOT_A_DICT_POS;
     int siblingPos = NOT_A_DICT_POS;
-    PatriciaTrieReadingUtils::readPtNodeInfo(mBuffer.data(), ptNodePos, mShortcutPolicy,
+    PatriciaTrieReadingUtils::readPtNodeInfo(mBuffer, ptNodePos, mShortcutPolicy,
             mBigramPolicy, mCodePointTable, &flags, &mergedNodeCodePointCount, mergedNodeCodePoints,
             &probability, &childrenPos, &shortcutPos, &bigramPos, &siblingPos);
+    if (ByteArrayUtils::isPastEnd(mBuffer, siblingPos)) {
+        AKLOGE("PtNode does not fit in the dictionary. pos: %d, dictionary size: %zd",
+                ptNodePos, mBuffer.size());
+        mHasReadMalformedPtNode = true;
+        return PtNodeParams();
+    }
     if (mergedNodeCodePointCount <= 0) {
         AKLOGE("Empty PtNode is not allowed. Code point count: %d", mergedNodeCodePointCount);
         ASSERT(false);
+        mHasReadMalformedPtNode = true;
         return PtNodeParams();
     }
     return PtNodeParams(ptNodePos, flags, mergedNodeCodePointCount, mergedNodeCodePoints,

@@ -36,9 +36,14 @@ class Ver2ParticiaTrieNodeReader : public PtNodeReader {
             const DictionaryShortcutsStructurePolicy *const shortcutPolicy,
             const int *const codePointTable)
             : mBuffer(buffer), mBigramPolicy(bigramPolicy), mShortcutPolicy(shortcutPolicy),
-              mCodePointTable(codePointTable) {}
+              mCodePointTable(codePointTable), mHasReadMalformedPtNode(false) {}
 
     virtual const PtNodeParams fetchPtNodeParamsInBufferFromPtNodePos(const int ptNodePos) const;
+
+    // True once a PtNode that does not fit in the buffer, or has no code points, was read.
+    bool hasReadMalformedPtNode() const {
+        return mHasReadMalformedPtNode;
+    }
 
  private:
     DISALLOW_IMPLICIT_CONSTRUCTORS(Ver2ParticiaTrieNodeReader);
@@ -47,6 +52,7 @@ class Ver2ParticiaTrieNodeReader : public PtNodeReader {
     const DictionaryBigramsStructurePolicy *const mBigramPolicy;
     const DictionaryShortcutsStructurePolicy *const mShortcutPolicy;
     const int *const mCodePointTable;
+    mutable bool mHasReadMalformedPtNode;
 };
 } // namespace latinime
 #endif /* LATINIME_VER2_PATRICIA_TRIE_NODE_READER_H */

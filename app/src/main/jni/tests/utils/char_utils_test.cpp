@@ -118,5 +118,22 @@ TEST(CharUtilsTest, TestIsInUnicodeSpace) {
     EXPECT_TRUE(CharUtils::isInUnicodeSpace(0x1F36A /* COOKIE */));
 }
 
+TEST(CharUtilsTest, TestToBaseCodePointOutOfTable) {
+    // Negative values are not used as a table index and stay as they are.
+    EXPECT_EQ(NOT_A_CODE_POINT, CharUtils::toBaseCodePoint(NOT_A_CODE_POINT));
+    EXPECT_EQ(-2, CharUtils::toBaseCodePoint(-2));
+    EXPECT_EQ(S_INT_MIN, CharUtils::toBaseCodePoint(S_INT_MIN));
+    EXPECT_EQ(NOT_A_CODE_POINT, CharUtils::toBaseLowerCase(NOT_A_CODE_POINT));
+    // English and Sinhala are unchanged.
+    EXPECT_EQ('a', CharUtils::toBaseCodePoint('a'));
+    EXPECT_EQ('A', CharUtils::toBaseCodePoint('A'));
+    EXPECT_EQ('e', CharUtils::toBaseCodePoint(0x00E9)); // é
+    EXPECT_EQ(0x0D9A, CharUtils::toBaseCodePoint(0x0D9A)); // Sinhala KA
+    EXPECT_EQ(0x0DCA, CharUtils::toBaseCodePoint(0x0DCA)); // Sinhala virama (al-lakuna)
+    EXPECT_EQ(0x200D, CharUtils::toBaseCodePoint(0x200D)); // ZWJ
+    EXPECT_EQ(0x1F600, CharUtils::toBaseCodePoint(0x1F600));
+    EXPECT_EQ(S_INT_MAX, CharUtils::toBaseCodePoint(S_INT_MAX));
+}
+
 }  // namespace
 }  // namespace latinime

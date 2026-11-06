@@ -67,6 +67,7 @@ clang++ "${SANITIZE[@]}" "${objects[@]}" -L "$GTEST_PREFIX/lib" -lgtest -lgtest_
 
 export RCB_DICTS_DIR="${RCB_DICTS_DIR:-$APP_DIR/src/main/assets/dicts}"
 export RCB_CORPUS_DIR="${RCB_CORPUS_DIR:-$TESTS_DIR/data/v2_stack_overflow}"
+export RCB_READ_CORPUS_DIR="${RCB_READ_CORPUS_DIR:-$TESTS_DIR/data/v2_out_of_bounds_read}"
 # forgetting_curve_utils.cpp: a known float-to-int conversion when the library initializes, unrelated
 # to dictionary reading; suppressed so every other undefined behaviour stops the run.
 export ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0:abort_on_error=0}"

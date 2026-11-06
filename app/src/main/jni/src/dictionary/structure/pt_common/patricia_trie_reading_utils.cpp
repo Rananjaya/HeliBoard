@@ -44,8 +44,16 @@ const PtReadingUtils::NodeFlags PtReadingUtils::FLAG_IS_NOT_A_WORD = 0x02;
 // Flag for possibly offensive words
 const PtReadingUtils::NodeFlags PtReadingUtils::FLAG_IS_POSSIBLY_OFFENSIVE = 0x01;
 
-/* static */ int PtReadingUtils::getPtNodeArraySizeAndAdvancePosition(
-        const uint8_t *const buffer, int *const pos) {
+namespace {
+
+// Largest fixed part of a valid PtNode: flags, MAX_WORD_LENGTH code points and the terminator (3
+// bytes each at most), probability and a 3-byte children position.
+const int MAX_PT_NODE_FIXED_PART_SIZE = 1 + (MAX_WORD_LENGTH + 1) * 3 + 1 + 3;
+
+// Shared by the raw pointer (v4) and ReadOnlyByteArrayView (v2) forms; the ByteArrayUtils overload
+// for the buffer type decides whether reads are bounds checked.
+template<typename Buffer>
+AK_FORCE_INLINE int getPtNodeArraySize(const Buffer buffer, int *const pos) {
     const uint8_t firstByte = ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
     if (firstByte < 0x80) {
         return firstByte;
@@ -55,33 +63,22 @@ const PtReadingUtils::NodeFlags PtReadingUtils::FLAG_IS_POSSIBLY_OFFENSIVE = 0x0
     }
 }
 
-/* static */ PtReadingUtils::NodeFlags PtReadingUtils::getFlagsAndAdvancePosition(
-        const uint8_t *const buffer, int *const pos) {
-    return ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
-}
-
-/* static */ int PtReadingUtils::getCodePointAndAdvancePosition(const uint8_t *const buffer,
-        const int *const codePointTable, int *const pos) {
-    return ByteArrayUtils::readCodePointAndAdvancePosition(buffer, codePointTable, pos);
-}
-
-// Returns the number of read characters.
-/* static */ int PtReadingUtils::getCharsAndAdvancePosition(const uint8_t *const buffer,
-        const NodeFlags flags, const int maxLength, const int *const codePointTable,
-        int *const outBuffer, int *const pos) {
+template<typename Buffer>
+AK_FORCE_INLINE int getChars(const Buffer buffer, const PtReadingUtils::NodeFlags flags, const int maxLength,
+        const int *const codePointTable, int *const outBuffer, int *const pos) {
     int length = 0;
-    if (hasMultipleChars(flags)) {
+    if (PtReadingUtils::hasMultipleChars(flags)) {
         length = ByteArrayUtils::readStringAndAdvancePosition(buffer, maxLength, codePointTable,
                 outBuffer, pos);
     } else {
-        const int codePoint = getCodePointAndAdvancePosition(buffer, codePointTable, pos);
+        const int codePoint = ByteArrayUtils::readCodePointAndAdvancePosition(buffer,
+                codePointTable, pos);
         if (codePoint == NOT_A_CODE_POINT) {
             // CAVEAT: codePoint == NOT_A_CODE_POINT means the code point is
             // CHARACTER_ARRAY_TERMINATOR. The code point must not be CHARACTER_ARRAY_TERMINATOR
             // when the PtNode has a single code point.
             length = 0;
-            AKLOGE("codePoint is NOT_A_CODE_POINT. pos: %d, codePoint: 0x%x, buffer[pos - 1]: 0x%x",
-                    *pos - 1, codePoint, buffer[*pos - 1]);
+            AKLOGE("codePoint is NOT_A_CODE_POINT. pos: %d", *pos - 1);
             ASSERT(false);
         } else if (maxLength > 0) {
             outBuffer[0] = codePoint;
@@ -91,28 +88,11 @@ const PtReadingUtils::NodeFlags PtReadingUtils::FLAG_IS_POSSIBLY_OFFENSIVE = 0x0
     return length;
 }
 
-// Returns the number of skipped characters.
-/* static */ int PtReadingUtils::skipCharacters(const uint8_t *const buffer, const NodeFlags flags,
-        const int maxLength, const int *const codePointTable, int *const pos) {
-    if (hasMultipleChars(flags)) {
-        return ByteArrayUtils::advancePositionToBehindString(buffer, maxLength, pos);
-    } else {
-        if (maxLength > 0) {
-            getCodePointAndAdvancePosition(buffer, codePointTable, pos);
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-}
+} // namespace
 
-/* static */ int PtReadingUtils::readProbabilityAndAdvancePosition(const uint8_t *const buffer,
-        int *const pos) {
-    return ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
-}
-
-/* static */ int PtReadingUtils::readChildrenPositionAndAdvancePosition(
-        const uint8_t *const buffer, const NodeFlags flags, int *const pos) {
+template<typename Buffer>
+/* static */ AK_FORCE_INLINE int PtReadingUtils::readChildrenPosition(const Buffer buffer,
+        const NodeFlags flags, int *const pos) {
     const int base = *pos;
     int offset = 0;
     switch (MASK_CHILDREN_POSITION_TYPE & flags) {
@@ -133,21 +113,106 @@ const PtReadingUtils::NodeFlags PtReadingUtils::FLAG_IS_POSSIBLY_OFFENSIVE = 0x0
     return base + offset;
 }
 
-/* static */ void PtReadingUtils::readPtNodeInfo(const uint8_t *const dictBuf, const int ptNodePos,
+/* static */ int PtReadingUtils::getPtNodeArraySizeAndAdvancePosition(
+        const uint8_t *const buffer, int *const pos) {
+    return getPtNodeArraySize(buffer, pos);
+}
+
+/* static */ int PtReadingUtils::getPtNodeArraySizeAndAdvancePosition(
+        const ReadOnlyByteArrayView buffer, int *const pos) {
+    return getPtNodeArraySize(buffer, pos);
+}
+
+/* static */ PtReadingUtils::NodeFlags PtReadingUtils::getFlagsAndAdvancePosition(
+        const uint8_t *const buffer, int *const pos) {
+    return ByteArrayUtils::readUint8AndAdvancePosition(buffer, pos);
+}
+
+/* static */ int PtReadingUtils::getCharsAndAdvancePosition(const uint8_t *const buffer,
+        const NodeFlags flags, const int maxLength, const int *const codePointTable,
+        int *const outBuffer, int *const pos) {
+    return getChars(buffer, flags, maxLength, codePointTable, outBuffer, pos);
+}
+
+/* static */ int PtReadingUtils::getCharsAndAdvancePosition(const ReadOnlyByteArrayView buffer,
+        const NodeFlags flags, const int maxLength, const int *const codePointTable,
+        int *const outBuffer, int *const pos) {
+    if (!hasMultipleChars(flags)) {
+        return getChars(buffer, flags, maxLength, codePointTable, outBuffer, pos);
+    }
+    bool isTooLong = false;
+    const int length = ByteArrayUtils::readStringAndAdvancePosition(buffer, maxLength,
+            codePointTable, outBuffer, pos, &isTooLong);
+    if (isTooLong) {
+        // A PtNode with more code points than maxLength is malformed; do not cut it.
+        ByteArrayUtils::movePastEnd(buffer, pos);
+    }
+    return length;
+}
+
+/* static */ int PtReadingUtils::readChildrenPositionAndAdvancePosition(
+        const uint8_t *const buffer, const NodeFlags flags, int *const pos) {
+    return readChildrenPosition(buffer, flags, pos);
+}
+
+/* static */ void PtReadingUtils::readPtNodeInfo(const ReadOnlyByteArrayView dictBuf,
+        const int ptNodePos,
         const DictionaryShortcutsStructurePolicy *const shortcutPolicy,
         const DictionaryBigramsStructurePolicy *const bigramPolicy, const int *const codePointTable,
         NodeFlags *const outFlags, int *const outCodePointCount, int *const outCodePoint,
         int *const outProbability, int *const outChildrenPos, int *const outShortcutPos,
         int *const outBigramPos, int *const outSiblingPos) {
     int readingPos = ptNodePos;
-    const NodeFlags flags = getFlagsAndAdvancePosition(dictBuf, &readingPos);
+    NodeFlags flags;
+    if (ByteArrayUtils::isInBounds(dictBuf, ptNodePos, MAX_PT_NODE_FIXED_PART_SIZE)) {
+        // Fast path (all but the last PtNodes of a file): the flags, characters, probability and
+        // children position of the largest valid PtNode are inside the buffer, so they are read
+        // without a check each. Multiple characters still go through the bounded reader, which
+        // reports a PtNode longer than MAX_WORD_LENGTH.
+        const uint8_t *const buffer = dictBuf.data();
+        flags = getFlagsAndAdvancePosition(buffer, &readingPos);
+        if (hasMultipleChars(flags)) {
+            bool isTooLong = false;
+            *outCodePointCount = ByteArrayUtils::readStringAndAdvancePosition(buffer,
+                    MAX_WORD_LENGTH, codePointTable, outCodePoint, &readingPos, &isTooLong);
+            if (isTooLong) {
+                // A PtNode with more code points than MAX_WORD_LENGTH is malformed.
+                ByteArrayUtils::movePastEnd(dictBuf, &readingPos);
+            } else {
+                ByteArrayUtils::checkCodePointTableEntry(dictBuf, codePointTable,
+                        NOT_A_CODE_POINT, &readingPos);
+            }
+            if (ByteArrayUtils::isPastEnd(dictBuf, readingPos)) {
+                // Malformed characters: nothing more is read (the position is not valid).
+                *outFlags = flags;
+                *outProbability = NOT_A_PROBABILITY;
+                *outChildrenPos = NOT_A_DICT_POS;
+                *outShortcutPos = NOT_A_DICT_POS;
+                *outBigramPos = NOT_A_DICT_POS;
+                *outSiblingPos = readingPos;
+                return;
+            }
+        } else {
+            *outCodePointCount = getCharsAndAdvancePosition(buffer, flags, MAX_WORD_LENGTH,
+                    codePointTable, outCodePoint, &readingPos);
+        }
+        *outProbability = isTerminal(flags) ?
+                ByteArrayUtils::readUint8AndAdvancePosition(buffer, &readingPos)
+                : NOT_A_PROBABILITY;
+        *outChildrenPos = hasChildrenInFlags(flags) ?
+                readChildrenPositionAndAdvancePosition(buffer, flags, &readingPos)
+                : NOT_A_DICT_POS;
+    } else {
+        flags = getFlagsAndAdvancePosition(dictBuf, &readingPos);
+        *outCodePointCount = getCharsAndAdvancePosition(
+                dictBuf, flags, MAX_WORD_LENGTH, codePointTable, outCodePoint, &readingPos);
+        *outProbability = isTerminal(flags) ?
+                readProbabilityAndAdvancePosition(dictBuf, &readingPos) : NOT_A_PROBABILITY;
+        *outChildrenPos = hasChildrenInFlags(flags) ?
+                readChildrenPositionAndAdvancePosition(dictBuf, flags, &readingPos)
+                : NOT_A_DICT_POS;
+    }
     *outFlags = flags;
-    *outCodePointCount = getCharsAndAdvancePosition(
-            dictBuf, flags, MAX_WORD_LENGTH, codePointTable, outCodePoint, &readingPos);
-    *outProbability = isTerminal(flags) ?
-            readProbabilityAndAdvancePosition(dictBuf, &readingPos) : NOT_A_PROBABILITY;
-    *outChildrenPos = hasChildrenInFlags(flags) ?
-            readChildrenPositionAndAdvancePosition(dictBuf, flags, &readingPos) : NOT_A_DICT_POS;
     *outShortcutPos = NOT_A_DICT_POS;
     if (hasShortcutTargets(flags)) {
         *outShortcutPos = readingPos;
@@ -156,7 +221,10 @@ const PtReadingUtils::NodeFlags PtReadingUtils::FLAG_IS_POSSIBLY_OFFENSIVE = 0x0
     *outBigramPos = NOT_A_DICT_POS;
     if (hasBigrams(flags)) {
         *outBigramPos = readingPos;
-        bigramPolicy->skipAllBigrams(&readingPos);
+        if (!bigramPolicy->skipAllBigrams(&readingPos)) {
+            // The bigram list runs past the end of the buffer.
+            ByteArrayUtils::movePastEnd(dictBuf, &readingPos);
+        }
     }
     *outSiblingPos = readingPos;
 }

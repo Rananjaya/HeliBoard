@@ -22,6 +22,7 @@
 #include "defines.h"
 #include "dictionary/interface/dictionary_shortcuts_structure_policy.h"
 #include "dictionary/structure/pt_common/shortcut/shortcut_list_reading_utils.h"
+#include "dictionary/utils/byte_array_utils.h"
 #include "utils/byte_array_view.h"
 
 namespace latinime {
@@ -55,6 +56,12 @@ class ShortcutListPolicy : public DictionaryShortcutsStructurePolicy {
         if (outCodePoint) {
             *outCodePointCount = ShortcutListReadingUtils::readShortcutTarget(
                     mBuffer, maxCodePointCount, outCodePoint, pos);
+        }
+        if (ByteArrayUtils::isPastEnd(mBuffer, *pos)) {
+            // Truncated or malformed shortcut list: return nothing and stop.
+            AKLOGE("Shortcut list is malformed. bufSize: %zd", mBuffer.size());
+            if (outHasNext) *outHasNext = false;
+            if (outCodePoint) *outCodePointCount = 0;
         }
     }
 

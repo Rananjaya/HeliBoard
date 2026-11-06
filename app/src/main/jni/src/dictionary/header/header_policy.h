@@ -104,7 +104,7 @@ class HeaderPolicy : public DictionaryHeaderStructurePolicy {
               mRequiresGermanUmlautProcessing(false), mIsDecayingDict(false),
               mDate(0), mLastDecayedTime(0), mNgramCounts(), mMaxNgramCounts(),
               mExtendedRegionSize(0), mHasHistoricalInfoOfWords(false),
-              mForgettingCurveProbabilityValuesTableId(0), mCodePointTable(nullptr) {}
+              mForgettingCurveProbabilityValuesTableId(0), mCodePointTable() {}
 
     ~HeaderPolicy() {}
 
@@ -214,8 +214,9 @@ class HeaderPolicy : public DictionaryHeaderStructurePolicy {
         return mDictFormatVersion >= FormatUtils::VERSION_402;
     }
 
+    // Null, or a table with an entry for every one-byte value (see readCodePointTable).
     const int *getCodePointTable() const {
-        return mCodePointTable;
+        return mCodePointTable.empty() ? nullptr : mCodePointTable.data();
     }
 
  private:
@@ -254,7 +255,7 @@ class HeaderPolicy : public DictionaryHeaderStructurePolicy {
     const int mExtendedRegionSize;
     const bool mHasHistoricalInfoOfWords;
     const int mForgettingCurveProbabilityValuesTableId;
-    const int *const mCodePointTable;
+    const std::vector<int> mCodePointTable;
 
     const std::vector<int> readLocale() const;
     float readMultipleWordCostMultiplier() const;

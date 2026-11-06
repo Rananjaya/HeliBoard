@@ -19,6 +19,7 @@
 #include <climits>
 
 #include "defines.h"
+#include "dictionary/header/header_read_write_utils.h"
 #include "dictionary/structure/backward/v402/ver4_dict_buffers.h"
 #include "dictionary/structure/backward/v402/ver4_dict_constants.h"
 #include "dictionary/structure/backward/v402/ver4_patricia_trie_policy.h"
@@ -180,9 +181,20 @@ template<class DictConstants, class DictBuffers, class DictBuffersPtr, class Str
         case FormatUtils::VERSION_201:
             AKLOGE("Dictionary versions 2 and 201 are incompatible with this version");
             break;
-        case FormatUtils::VERSION_202:
+        case FormatUtils::VERSION_202: {
+            // Malformed files are rejected here, before anything else reads the header.
+            const ReadOnlyByteArrayView buffer = mmappedBuffer->getReadOnlyByteArrayView();
+            if (buffer.size() > static_cast<size_t>(PatriciaTriePolicy::MAX_DICTIONARY_SIZE)) {
+                AKLOGE("Dictionary is too large: %zd bytes. path: %s", buffer.size(), path);
+                break;
+            }
+            if (!HeaderReadWriteUtils::isValidHeader(buffer)) {
+                AKLOGE("Dictionary header is malformed. path: %s", path);
+                break;
+            }
             return DictionaryStructureWithBufferPolicy::StructurePolicyPtr(
                     new PatriciaTriePolicy(std::move(mmappedBuffer)));
+        }
         case FormatUtils::VERSION_4_ONLY_FOR_TESTING:
         case FormatUtils::VERSION_402:
         case FormatUtils::VERSION_403:
