@@ -255,6 +255,50 @@ class ReleaseRecoveryTest(unittest.TestCase):
         self.assertEqual(self.run_nv()["tag"], "rcbboard-v4.3.1")
 
 
+class OlderThanLatestReleaseTest(unittest.TestCase):
+    """Production may not release a commit older than (or not based on) the latest release."""
+
+    def setUp(self):
+        NextVersionTest.setUp(self)  # type: ignore[arg-type]
+        self.a = self.repo.commit("fix: a")
+        self.repo.git("tag", "rcbboard-v4.3.1")
+        self.b = self.repo.commit("fix: b")
+        self.repo.git("tag", "rcbboard-v4.3.2")
+        self.c = self.repo.commit("fix: c")
+
+    def tearDown(self):
+        NextVersionTest.tearDown(self)  # type: ignore[arg-type]
+
+    def test_newer_commit_is_allowed(self):
+        nv.check_not_older_than_latest_release(self.c, ["rcbboard-v4.3.2", "rcbboard-v4.3.1", "v4.3-beta1"])
+
+    def test_same_commit_as_latest_release_is_allowed(self):
+        # reported as "already released" by the release workflow, not as an error here
+        nv.check_not_older_than_latest_release(self.b, ["rcbboard-v4.3.2"])
+
+    def test_older_commit_is_refused(self):
+        with self.assertRaisesRegex(nv.VersionError, "older than the latest release rcbboard-v4.3.2"):
+            nv.check_not_older_than_latest_release(self.a, ["rcbboard-v4.3.1", "rcbboard-v4.3.2"])
+
+    def test_commit_not_based_on_latest_release_is_refused(self):
+        self.repo.git("checkout", "-q", "-b", "side", self.a)
+        side = self.repo.commit("fix: side")
+        with self.assertRaisesRegex(nv.VersionError, "does not contain the latest release"):
+            nv.check_not_older_than_latest_release(side, ["rcbboard-v4.3.2"])
+
+    def test_no_published_release_or_only_manual_one(self):
+        nv.check_not_older_than_latest_release(self.a, [])
+        nv.check_not_older_than_latest_release(self.a, ["v4.3-beta1"])
+
+    def test_latest_is_by_version_not_by_list_order(self):
+        with self.assertRaisesRegex(nv.VersionError, "rcbboard-v4.3.2"):
+            nv.check_not_older_than_latest_release(self.a, ["rcbboard-v4.3.2", "rcbboard-v4.3.1"])
+
+    def test_missing_tag_in_clone(self):
+        with self.assertRaisesRegex(nv.VersionError, "fetch-tags"):
+            nv.check_not_older_than_latest_release(self.c, ["rcbboard-v9.0.0"])
+
+
 class GitHubApiTest(unittest.TestCase):
     def setUp(self):
         self.original = nv.gh_api

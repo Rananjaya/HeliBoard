@@ -1,0 +1,187 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Stage 1 - Development: after every push to develop (for example a merged pull request),
+# run the CI checks on the exact pushed commit and build the Debug APK from it
+# (:app:assembleDebug, com.ranger.myheliboard.debug, signed with the persistent
+# RCBBoard debug key). No production secrets, no tags, no releases. See docs/ci-cd.md.
+name: Development
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: development-${{ github.sha }}
+  cancel-in-progress: false
+
+env:
+  JAVA_VERSION: "21"
+  ANDROID_PACKAGES: "platform-tools platforms;android-37.0 build-tools;36.0.0 ndk;28.0.13004108"
+  BUILD_TOOLS_VERSION: "36.0.0"
+  APP_ID: com.ranger.myheliboard.debug
+
+jobs:
+  checks:
+    name: Checks
+    if: github.repository == 'Rananjaya/RCBBoard' && github.ref == 'refs/heads/develop'
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+    with:
+      commit: ${{ github.sha }}
+      skip_debug_build: true # the job below builds the same debug APK
+
+  build:
+    name: Development APK
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      COMMIT: ${{ github.sha }}
+      RUN_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      # Every Development and QA APK is signed with the same persistent RCBBoard debug key
+      # (repository secrets DEBUG_*, never the production key), so a new build installs as an
+      # update over the previous one. Without it the run stops. See docs/ci-cd.md.
+      - name: Check debug signing secrets
+        env:
+          KS_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.DEBUG_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.DEBUG_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.DEBUG_KEY_PASSWORD }}
+          CERT: ${{ vars.DEBUG_CERT_SHA256 }}
+        run: |
+          missing=""
+          [ -n "$KS_B64" ] || missing="$missing DEBUG_KEYSTORE_BASE64"
+          [ -n "$KS_PASS" ] || missing="$missing DEBUG_KEYSTORE_PASSWORD"
+          [ -n "$KEY_ALIAS" ] || missing="$missing DEBUG_KEY_ALIAS"
+          [ -n "$KEY_PASS" ] || missing="$missing DEBUG_KEY_PASSWORD"
+          [ -n "$CERT" ] || missing="$missing DEBUG_CERT_SHA256(variable)"
+          if [ -n "$missing" ]; then
+            echo "::error title=Debug signing not configured::Missing:$missing. Add the RCBBoard debug key as repository secrets and its certificate SHA-256 as a repository variable (docs/ci-cd.md, 'Debug signing key'). Nothing was built."
+            exit 1
+          fi
+
+      # versionCode = minutes since 1970, so a later Development or QA build always has a
+      # higher versionCode than an earlier one.
+      - name: Version
+        id: version
+        run: |
+          set -euo pipefail
+          short="${COMMIT:0:7}"
+          if python3 .github/scripts/next_version.py --head "$COMMIT" --github-output "$RUNNER_TEMP/version.txt" > /dev/null; then
+            base=$(grep '^version=' "$RUNNER_TEMP/version.txt" | cut -d= -f2)
+          else
+            base="0.0.0"
+          fi
+          echo "version_name=${base}-dev.${RUN_NUMBER}+${short}" >> "$GITHUB_OUTPUT"
+          echo "version_code=$(( $(date -u +%s) / 60 ))" >> "$GITHUB_OUTPUT"
+          echo "file_name=RCBBoard-dev-${base}-dev.${RUN_NUMBER}-${short}.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: ${{ env.ANDROID_PACKAGES }}
+          log-accepted-android-sdk-licenses: false
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: basic
+
+      - name: Build Debug APK
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+        run: >-
+          ./gradlew :app:assembleDebug
+          -PrcbboardVersionCode="$VERSION_CODE" -PrcbboardVersionName="$VERSION_NAME"
+
+      - name: Decode debug keystore
+        env:
+          KS_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          umask 077
+          printf '%s' "$KS_B64" | base64 --decode > "$RUNNER_TEMP/rcbboard-debug.keystore" \
+            || { echo "::error title=Debug keystore::DEBUG_KEYSTORE_BASE64 is not valid base64"; exit 1; }
+
+      # Re-signs the Gradle debug APK with the RCBBoard debug key and verifies it: v1/v2
+      # signatures, exactly one signer with the DEBUG_CERT_SHA256 certificate, app ID, version,
+      # minSdk and all four ABIs (same script as production, with the debug key and package).
+      - name: Sign and verify the APK
+        id: apk
+        env:
+          RCB_KEYSTORE: ${{ runner.temp }}/rcbboard-debug.keystore
+          RCB_KEYSTORE_PASSWORD: ${{ secrets.DEBUG_KEYSTORE_PASSWORD }}
+          RCB_KEY_ALIAS: ${{ secrets.DEBUG_KEY_ALIAS }}
+          RCB_KEY_PASSWORD: ${{ secrets.DEBUG_KEY_PASSWORD }}
+          CERT: ${{ vars.DEBUG_CERT_SHA256 }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          FILE_NAME: ${{ steps.version.outputs.file_name }}
+        run: |
+          set -euo pipefail
+          apks=$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk')
+          [ "$(printf '%s\n' "$apks" | grep -c .)" = 1 ] || { echo "::error::expected exactly one debug APK, found: $apks"; exit 1; }
+          python3 .github/scripts/sign_release.py --apk "$apks" --out-dir "$RUNNER_TEMP/apk" \
+            --name "${FILE_NAME%.apk}" --build-tools "$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION" \
+            --expected-cert-sha256 "$CERT" --package "$APP_ID" \
+            --version-code "$VERSION_CODE" --version-name "$VERSION_NAME" --min-sdk 21
+          echo "path=$RUNNER_TEMP/apk/$FILE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Remove debug keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/rcbboard-debug.keystore"
+
+      # archive: false uploads the APK itself, so it downloads as an .apk instead of a .zip
+      - name: Upload Development APK
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: ${{ steps.apk.outputs.path }}
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Summary
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          FILE_NAME: ${{ steps.version.outputs.file_name }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+          CERT: ${{ vars.DEBUG_CERT_SHA256 }}
+        run: |
+          {
+            echo "## Development APK"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| **Commit** | \`$COMMIT\` |"
+            echo "| **Version** | $VERSION_NAME (versionCode $VERSION_CODE) |"
+            echo "| **App** | RCBBoard debug (\`$APP_ID\`) |"
+            echo "| **APK** | [\`$FILE_NAME\`]($ARTIFACT_URL) (kept 14 days) |"
+            echo "| **Signing** | RCBBoard debug key, certificate SHA-256 \`$CERT\` |"
+            echo
+            echo "**Next stage:** Actions > QA > Run workflow on \`develop\` with commit:"
+            echo
+            echo "\`\`\`"
+            echo "$COMMIT"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
