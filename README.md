@@ -100,6 +100,8 @@ You can share your themes, layouts and dictionaries with other people:
 ## Code Contribution
 See [Contribution Guidelines](CONTRIBUTING.md), [AI_USAGE.md](AI_USAGE.md), the [Code of Conduct](CODE_OF_CONDUCT.md) and the [Security Policy](SECURITY.md).
 
+Pull requests go to `Rananjaya/RCBBoard`, branch `develop`, never to HeliBoard. GitHub may preselect `HeliBorg/HeliBoard` and `main` because RCBBoard is a fork, so please check the base before creating a pull request (see [Where pull requests go](CONTRIBUTING.md#where-pull-requests-go)).
+
 # Links
 * Info
   * [Wiki](https://github.com/HeliBorg/HeliBoard/wiki), including FAQ, help on customizing layouts, and gesture data gathering

@@ -1,6 +1,11 @@
 <!--
-Thanks for contributing to RCBBoard! Please target the `develop` branch, keep to one topic,
-and see CONTRIBUTING.md. Do not post details of security problems here; see SECURITY.md.
+BEFORE CREATING THIS PULL REQUEST, CHECK THE TARGET:
+  base repository: Rananjaya/RCBBoard   (not HeliBorg/HeliBoard)
+  base branch:     develop              (not main)
+See "Where pull requests go" in CONTRIBUTING.md.
+
+Thanks for contributing to RCBBoard! Please keep to one topic and see CONTRIBUTING.md.
+Do not post details of security problems here; see SECURITY.md.
 -->
 
 ## What changed and why
