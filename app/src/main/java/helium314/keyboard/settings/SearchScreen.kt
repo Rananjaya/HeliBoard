@@ -73,9 +73,10 @@ fun SearchSettingsScreen(
                     Column(
                         Modifier.verticalScroll(rememberScrollState()).then(Modifier.padding(innerPadding))
                     ) {
-                        settings.forEach {
+                        settings.forEachIndexed { index, it ->
                             if (it is Int) {
-                                PreferenceCategory(stringResource(it))
+                                // no divider above the first category, it would sit right below the title bar
+                                PreferenceCategory(stringResource(it), showDivider = index != 0)
                             } else {
                                 // this only animates appearing prefs
                                 // a solution would be using a list(visible to key)

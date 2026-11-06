@@ -806,8 +806,6 @@ New dictionary:
     <string name="version">Version</string>
     <string name="about_developer">Developer &amp; Maintainer</string>
     <string name="about_developer_description">Developed and maintained by</string>
-    <string name="about_original_project">Original project</string>
-    <string name="about_original_project_description">Based on HeliBoard by Helium314.</string>
     <string name="about_third_party">Third-party resources</string>
     <string name="about_third_party_description">Emoji dictionaries for English and Sinhala, and a Sinhala word dictionary (GPL-3.0-or-later). Unicode License v3 (CLDR) and AGPL-3.0 (Signal), including the Unicode copyright and permission notices.</string>
     <!-- github repo link for about screen -->

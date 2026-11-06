@@ -23,6 +23,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,14 +39,20 @@ import helium314.keyboard.latin.utils.previewDark
 fun PreferenceCategory(
     title: String,
     modifier: Modifier = Modifier,
+    showDivider: Boolean = true,
 ) {
     Column {
-        HorizontalDivider()
+        if (showDivider)
+            HorizontalDivider(
+                modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
         Text(
             text = title,
-            modifier = modifier.padding(top = 12.dp, start = 16.dp, end = 8.dp, bottom = 8.dp),
-            color = MaterialTheme.colorScheme.secondary,
-            style = MaterialTheme.typography.titleSmall
+            modifier = modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 4.dp),
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
@@ -63,13 +70,16 @@ fun Preference(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .heightIn(min = 44.dp)
-            .padding(vertical = 10.dp, horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .heightIn(min = 56.dp)
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null)
-            IconOrImage(icon, name, 32)
+            // softer icon colour so the setting name stays the most prominent element
+            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
+                IconOrImage(icon, name, 32)
+            }
         Column(modifier = Modifier.weight(1f)) {
             Text(text = name, style = MaterialTheme.typography.bodyLarge)
             if (description != null) {
