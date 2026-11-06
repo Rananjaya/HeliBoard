@@ -68,8 +68,6 @@ The Sinhala dictionary and the emoji dictionaries are bundled with their sources
 - **No internet permission.** RCBBoard does not have Android's `INTERNET` permission, so it cannot directly transmit what you type over a network.
 - **Your data stays on your device.** Learned words, clipboard history, dictionaries and settings are stored locally. They leave the device only in a backup you export yourself, or in Android's own device backup if you have that turned on.
 - **Few permissions.** Besides vibration, the system user dictionary and being notified when the device starts, RCBBoard only asks for contacts access if you turn on contact-name suggestions.
-- **Hardened v2 dictionary reader.** The native code that reads dictionary files in the v2 format (the format of the bundled dictionaries and of dictionary files you import) checks every read against the real file size. It is covered by regression tests run with AddressSanitizer and UndefinedBehaviorSanitizer.
-- **Still under review: v4 user-history dictionaries.** The learned-words dictionary that RCBBoard writes on your device uses the separate v4 format. Its native code is still being audited and has not received the same hardening, so RCBBoard does not claim that every native dictionary format is fully protected.
 - **Found a security problem?** Please report it privately, as described in [SECURITY.md](SECURITY.md).
 
 ## Download and install
@@ -82,9 +80,6 @@ RCBBoard needs Android 5.0 or newer. Release APKs are signed with this certifica
 ```
 0b01373116d4a7b57646c4c7e2ffc28af91870bdbeabb4b8c05c00f313e2291b
 ```
-
-> [!IMPORTANT]
-> The APK currently on the Releases page (`v4.3-beta1`) was built before the v2 dictionary security fixes described in [Privacy and security](#privacy-and-security). A release that includes them has not been published yet; until then, you can build RCBBoard from source.
 
 > [!NOTE]
 > The F-Droid, GitHub release and IzzyOnDroid listings for HeliBoard install the original project, package `helium314.keyboard`. They do not install RCBBoard (`com.ranger.myheliboard`).
