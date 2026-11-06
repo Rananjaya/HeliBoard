@@ -3,9 +3,9 @@ contact_links:
   - name: Dictionary request
     url: https://codeberg.org/Helium314/aosp-dictionaries
     about: Requests for dictionaries (used for suggestions / autocompletion) will be handled in the linked dictionary repository. You can check whether a dictionary for the language you want already exists there.
-  - name: Discussion
-    url: https://github.com/HeliBorg/HeliBoard/discussions
-    about: For discussions and feedback about this app, asking questions or talking about ideas which are not yet actionable (i.e. not suitable for an issue).
+  - name: Feedback and ideas
+    url: https://github.com/Rananjaya/RCBBoard
+    about: For feedback about RCBBoard and ideas which are not yet actionable (i.e. not suitable for an issue), see the RCBBoard repository. GitHub Discussions is not enabled for this repository.
   - name: Question
-    url: https://github.com/HeliBorg/HeliBoard/discussions/new?category=q-a
-    about: For questions please use the discussions section. You may also want to search your question in the FAQ (see readme).
+    url: https://github.com/Rananjaya/RCBBoard
+    about: For questions, check the README of the RCBBoard repository first, including its FAQ links and the Reporting Issues section. GitHub Discussions is not enabled for this repository.
